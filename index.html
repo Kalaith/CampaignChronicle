@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Campaign Companion</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Campaign Selection Screen -->
+        <div id="campaign-selection" class="view">
+            <div class="container">
+                <div class="campaign-selection-header">
+                    <h1>D&D Campaign Companion</h1>
+                    <p>Manage your campaigns, characters, and adventures</p>
+                </div>
+                
+                <div class="campaign-grid">
+                    <div class="campaign-card new-campaign" onclick="showNewCampaignModal()">
+                        <div class="campaign-card-content">
+                            <div class="campaign-icon">+</div>
+                            <h3>New Campaign</h3>
+                            <p>Start a new adventure</p>
+                        </div>
+                    </div>
+                    <div id="campaign-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Application -->
+        <div id="main-app" class="view hidden">
+            <!-- Header -->
+            <header class="app-header">
+                <div class="header-content">
+                    <button id="menu-toggle" class="btn btn--secondary">☰</button>
+                    <h1 id="current-campaign-name">Campaign Name</h1>
+                    <button id="theme-toggle" class="btn btn--secondary">🌙</button>
+                </div>
+            </header>
+
+            <!-- Sidebar -->
+            <nav id="sidebar" class="sidebar">
+                <div class="sidebar-header">
+                    <button id="back-to-campaigns" class="btn btn--outline">← Campaigns</button>
+                </div>
+                <ul class="sidebar-nav">
+                    <li><a href="#" data-view="dashboard" class="nav-item active">📊 Dashboard</a></li>
+                    <li><a href="#" data-view="characters" class="nav-item">👥 Characters</a></li>
+                    <li><a href="#" data-view="locations" class="nav-item">🏰 Locations</a></li>
+                    <li><a href="#" data-view="items" class="nav-item">⚔️ Items</a></li>
+                    <li><a href="#" data-view="relationships" class="nav-item">🔗 Relationships</a></li>
+                    <li><a href="#" data-view="notes" class="nav-item">📝 Notes</a></li>
+                </ul>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Dashboard View -->
+                <div id="dashboard-view" class="content-view">
+                    <div class="dashboard-header">
+                        <h2>Campaign Dashboard</h2>
+                        <div class="dashboard-actions">
+                            <button class="btn btn--primary" onclick="showQuickAddModal()">+ Quick Add</button>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card">
+                            <h3>Recent Activity</h3>
+                            <div id="recent-activity"></div>
+                        </div>
+                        
+                        <div class="dashboard-card">
+                            <h3>Quick Stats</h3>
+                            <div id="quick-stats"></div>
+                        </div>
+                        
+                        <div class="dashboard-card">
+                            <h3>Upcoming Sessions</h3>
+                            <div id="upcoming-sessions">
+                                <p>No upcoming sessions scheduled</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Characters View -->
+                <div id="characters-view" class="content-view hidden">
+                    <div class="view-header">
+                        <h2>Characters</h2>
+                        <div class="view-actions">
+                            <input type="text" id="characters-search" placeholder="Search characters..." class="form-control">
+                            <select id="character-filter" class="form-control">
+                                <option value="">All Types</option>
+                                <option value="PC">Player Characters</option>
+                                <option value="NPC">NPCs</option>
+                                <option value="Villain">Villains</option>
+                                <option value="Ally">Allies</option>
+                            </select>
+                            <button class="btn btn--primary" onclick="showCharacterModal()">+ Add Character</button>
+                        </div>
+                    </div>
+                    <div id="characters-grid" class="entity-grid"></div>
+                </div>
+
+                <!-- Locations View -->
+                <div id="locations-view" class="content-view hidden">
+                    <div class="view-header">
+                        <h2>Locations</h2>
+                        <div class="view-actions">
+                            <input type="text" id="locations-search" placeholder="Search locations..." class="form-control">
+                            <button class="btn btn--primary" onclick="showLocationModal()">+ Add Location</button>
+                        </div>
+                    </div>
+                    <div class="locations-content">
+                        <div id="locations-tree" class="locations-tree"></div>
+                    </div>
+                </div>
+
+                <!-- Items View -->
+                <div id="items-view" class="content-view hidden">
+                    <div class="view-header">
+                        <h2>Items</h2>
+                        <div class="view-actions">
+                            <input type="text" id="items-search" placeholder="Search items..." class="form-control">
+                            <button class="btn btn--primary" onclick="showItemModal()">+ Add Item</button>
+                        </div>
+                    </div>
+                    <div id="items-grid" class="entity-grid"></div>
+                </div>
+
+                <!-- Relationships View -->
+                <div id="relationships-view" class="content-view hidden">
+                    <div class="view-header">
+                        <h2>Relationship Network</h2>
+                        <div class="view-actions">
+                            <select id="relationship-filter" class="form-control">
+                                <option value="">All Relationships</option>
+                                <option value="ally">Allies</option>
+                                <option value="enemy">Enemies</option>
+                                <option value="family">Family</option>
+                                <option value="mentor">Mentors</option>
+                            </select>
+                            <button class="btn btn--primary" onclick="showRelationshipModal()">+ Add Relationship</button>
+                        </div>
+                    </div>
+                    <div id="relationship-network" class="relationship-network"></div>
+                </div>
+
+                <!-- Notes View -->
+                <div id="notes-view" class="content-view hidden">
+                    <div class="view-header">
+                        <h2>Notes & Journal</h2>
+                        <div class="view-actions">
+                            <input type="text" id="notes-search" placeholder="Search notes..." class="form-control">
+                            <button class="btn btn--primary" onclick="showNoteModal()">+ Add Note</button>
+                        </div>
+                    </div>
+                    <div id="notes-list" class="notes-list"></div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Modals -->
+        <div id="modal-overlay" class="modal-overlay hidden">
+            <!-- New Campaign Modal -->
+            <div id="new-campaign-modal" class="modal">
+                <div class="modal-header">
+                    <h3>New Campaign</h3>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <form id="new-campaign-form">
+                    <div class="form-group">
+                        <label class="form-label">Campaign Name</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn--secondary" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn btn--primary">Create Campaign</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Character Modal -->
+            <div id="character-modal" class="modal">
+                <div class="modal-header">
+                    <h3 id="character-modal-title">Add Character</h3>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <form id="character-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Name</label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Type</label>
+                            <select name="type" class="form-control" required>
+                                <option value="PC">Player Character</option>
+                                <option value="NPC">NPC</option>
+                                <option value="Villain">Villain</option>
+                                <option value="Ally">Ally</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Race</label>
+                            <input type="text" name="race" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Class</label>
+                            <input type="text" name="class" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Location</label>
+                        <select name="location" class="form-control" id="character-location-select"></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tags (comma-separated)</label>
+                        <input type="text" name="tags" class="form-control" placeholder="important, quest-giver, dwarf">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn--secondary" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn btn--primary">Save Character</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Location Modal -->
+            <div id="location-modal" class="modal">
+                <div class="modal-header">
+                    <h3 id="location-modal-title">Add Location</h3>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <form id="location-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Name</label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Type</label>
+                            <select name="type" class="form-control" required>
+                                <option value="Continent">Continent</option>
+                                <option value="Region">Region</option>
+                                <option value="City">City</option>
+                                <option value="Town">Town</option>
+                                <option value="Village">Village</option>
+                                <option value="Building">Building</option>
+                                <option value="Room">Room</option>
+                                <option value="Dungeon">Dungeon</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Parent Location</label>
+                        <select name="parent" class="form-control" id="location-parent-select">
+                            <option value="">None (Top Level)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tags (comma-separated)</label>
+                        <input type="text" name="tags" class="form-control" placeholder="major-city, port, sword-coast">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn--secondary" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn btn--primary">Save Location</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Item Modal -->
+            <div id="item-modal" class="modal">
+                <div class="modal-header">
+                    <h3 id="item-modal-title">Add Item</h3>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <form id="item-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Name</label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Type</label>
+                            <select name="type" class="form-control" required>
+                                <option value="Weapon">Weapon</option>
+                                <option value="Armor">Armor</option>
+                                <option value="Magic Item">Magic Item</option>
+                                <option value="Tool">Tool</option>
+                                <option value="Treasure">Treasure</option>
+                                <option value="Document">Document</option>
+                                <option value="Key Item">Key Item</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Owner</label>
+                            <select name="owner" class="form-control" id="item-owner-select">
+                                <option value="">None</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Location</label>
+                            <select name="location" class="form-control" id="item-location-select">
+                                <option value="">None</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" name="magical"> Magical Item
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tags (comma-separated)</label>
+                        <input type="text" name="tags" class="form-control" placeholder="important, quest-item, map">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn--secondary" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn btn--primary">Save Item</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Note Modal -->
+            <div id="note-modal" class="modal">
+                <div class="modal-header">
+                    <h3 id="note-modal-title">Add Note</h3>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <form id="note-form">
+                    <div class="form-group">
+                        <label class="form-label">Title</label>
+                        <input type="text" name="title" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Content</label>
+                        <textarea name="content" class="form-control" rows="6" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tags (comma-separated)</label>
+                        <input type="text" name="tags" class="form-control" placeholder="session-notes, important, combat">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn--secondary" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn btn--primary">Save Note</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Relationship Modal -->
+            <div id="relationship-modal" class="modal">
+                <div class="modal-header">
+                    <h3>Add Relationship</h3>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <form id="relationship-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">From</label>
+                            <select name="from" class="form-control" required id="relationship-from-select"></select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">To</label>
+                            <select name="to" class="form-control" required id="relationship-to-select"></select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Relationship Type</label>
+                            <select name="type" class="form-control" required id="relationship-type-select"></select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Strength (1-10)</label>
+                            <input type="number" name="strength" class="form-control" min="1" max="10" value="5">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn--secondary" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn btn--primary">Save Relationship</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Quick Add Modal -->
+            <div id="quick-add-modal" class="modal">
+                <div class="modal-header">
+                    <h3>Quick Add</h3>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <div class="quick-add-options">
+                    <button class="btn btn--primary" onclick="closeModal(); showCharacterModal()">👥 Add Character</button>
+                    <button class="btn btn--primary" onclick="closeModal(); showLocationModal()">🏰 Add Location</button>
+                    <button class="btn btn--primary" onclick="closeModal(); showItemModal()">⚔️ Add Item</button>
+                    <button class="btn btn--primary" onclick="closeModal(); showNoteModal()">📝 Add Note</button>
+                    <button class="btn btn--primary" onclick="closeModal(); showRelationshipModal()">🔗 Add Relationship</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
