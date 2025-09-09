@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useCampaignStore } from '../stores/campaignStore';
+import { useApiCampaignStore } from '../stores/apiCampaignStore';
 import { exportCampaignData, exportAllData, importCampaignData } from '../utils/dataExport';
 import { Modal } from './Modal';
 
@@ -17,9 +17,10 @@ export const DataManagement = ({ isOpen, onClose }: DataManagementProps) => {
     items,
     notes,
     relationships,
+    exportCampaign,
     importCampaignData: importCampaign,
-    importFullBackup,
-  } = useCampaignStore();
+    isLoading,
+  } = useApiCampaignStore();
 
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);

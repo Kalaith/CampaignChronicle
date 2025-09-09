@@ -1,5 +1,5 @@
 import React from 'react';
-import { useCampaignStore } from '../stores/campaignStore';
+import { useApiCampaignStore } from '../stores/apiCampaignStore';
 import { LocationsView } from '../components/LocationsView';
 
 const LocationsPage: React.FC = () => {
@@ -9,7 +9,7 @@ const LocationsPage: React.FC = () => {
     addLocation,
     updateLocation,
     deleteLocation
-  } = useCampaignStore();
+  } = useApiCampaignStore();
 
   if (!currentCampaign) {
     return null;

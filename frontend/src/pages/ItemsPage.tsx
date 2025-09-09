@@ -1,5 +1,5 @@
 import React from 'react';
-import { useCampaignStore } from '../stores/campaignStore';
+import { useApiCampaignStore } from '../stores/apiCampaignStore';
 import { ItemsView } from '../components/ItemsView';
 
 const ItemsPage: React.FC = () => {
@@ -11,7 +11,7 @@ const ItemsPage: React.FC = () => {
     addItem,
     updateItem,
     deleteItem
-  } = useCampaignStore();
+  } = useApiCampaignStore();
 
   if (!currentCampaign) {
     return null;

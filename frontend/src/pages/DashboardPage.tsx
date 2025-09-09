@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCampaignStore } from '../stores/campaignStore';
+import { useApiCampaignStore } from '../stores/apiCampaignStore';
 import { Dashboard } from '../components/Dashboard';
 
 const DashboardPage: React.FC = () => {
@@ -12,7 +12,7 @@ const DashboardPage: React.FC = () => {
     items,
     notes,
     setCurrentView
-  } = useCampaignStore();
+  } = useApiCampaignStore();
 
   if (!currentCampaign) {
     return null;

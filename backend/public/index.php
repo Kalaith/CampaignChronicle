@@ -29,6 +29,26 @@ $container = ContainerConfig::createContainer();
 // Initialize database service after environment variables are loaded
 $db = DatabaseService::getInstance();
 
+// Initialize Eloquent ORM
+$capsule = new \Illuminate\Database\Capsule\Manager();
+$capsule->addConnection([
+    'driver' => 'mysql',
+    'host' => $_ENV['DB_HOST'],
+    'port' => $_ENV['DB_PORT'],
+    'database' => $_ENV['DB_NAME'],
+    'username' => $_ENV['DB_USER'],
+    'password' => $_ENV['DB_PASSWORD'],
+    'charset' => 'utf8mb4',
+    'collation' => 'utf8mb4_unicode_ci',
+    'prefix' => '',
+]);
+
+// Make this Capsule instance available globally
+$capsule->setAsGlobal();
+
+// Setup the Eloquent ORM
+$capsule->bootEloquent();
+
 // Create app with DI container
 AppFactory::setContainer($container);
 global $app;

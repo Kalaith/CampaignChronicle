@@ -1,12 +1,12 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useCampaignStore } from './stores/campaignStore';
+import { useApiCampaignStore } from './stores/apiCampaignStore';
 import CampaignSelectionPage from './pages/CampaignSelectionPage';
 import CampaignLayoutPage from './pages/CampaignLayoutPage';
 import './styles/App.css';
 
 const App: React.FC = () => {
-  const { currentCampaign } = useCampaignStore();
+  const { currentCampaign } = useApiCampaignStore();
 
   const handleCampaignSelected = () => {
     // Navigation will be handled by React Router

@@ -154,8 +154,8 @@ abstract class BaseController
             'type' => $queryParams['type'] ?? null,
             'tags' => isset($queryParams['tags']) ? explode(',', $queryParams['tags']) : null,
             'sort' => $queryParams['sort'] ?? 'created_at',
-            'order' => in_array($queryParams['order'] ?? 'desc', ['asc', 'desc']) 
-                ? $queryParams['order'] 
+            'order' => in_array(strtolower($queryParams['order'] ?? 'desc'), ['asc', 'desc']) 
+                ? strtolower($queryParams['order'] ?? 'desc')
                 : 'desc',
         ];
     }

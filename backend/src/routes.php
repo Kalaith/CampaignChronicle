@@ -125,7 +125,6 @@ return function (App $app) {
             $characters->put('/{id}', [CharacterController::class, 'update']);
             $characters->delete('/{id}', [CharacterController::class, 'delete']);
             $characters->get('/{id}/relationships', [CharacterController::class, 'relationships']);
-            $characters->get('/{character_id}/relationships', [RelationshipController::class, 'characterRelationships']);
         });
 
         $group->group('/locations', function (RouteCollectorProxy $locations) {
@@ -166,7 +165,7 @@ return function (App $app) {
         // Import endpoint (creates new campaign)
         $group->post('/import', [CampaignController::class, 'import']);
         
-    })->add(new App\Middleware\CorsMiddleware());
+    })->add(new \App\Middleware\CorsMiddleware());
 
     // Handle preflight requests
     $app->options('/{routes:.*}', function (Request $request, Response $response) {

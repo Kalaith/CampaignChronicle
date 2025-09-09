@@ -1,5 +1,5 @@
 import React from 'react';
-import { useCampaignStore } from '../stores/campaignStore';
+import { useApiCampaignStore } from '../stores/apiCampaignStore';
 import { CharactersView } from '../components/CharactersView';
 
 const CharactersPage: React.FC = () => {
@@ -10,7 +10,7 @@ const CharactersPage: React.FC = () => {
     addCharacter,
     updateCharacter,
     deleteCharacter
-  } = useCampaignStore();
+  } = useApiCampaignStore();
 
   if (!currentCampaign) {
     return null;

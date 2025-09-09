@@ -29,13 +29,23 @@ abstract class BaseModel extends Model
     /**
      * Boot the model and generate UUID on creation.
      */
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        
+        // Set UUID if not already set
+        if (empty($this->attributes[$this->getKeyName()])) {
+            $this->attributes[$this->getKeyName()] = (string) Uuid::uuid4();
+        }
+    }
+
     protected static function boot()
     {
         parent::boot();
 
         static::creating(function ($model) {
-            if (empty($model->id)) {
-                $model->id = (string) Uuid::uuid4();
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = (string) Uuid::uuid4();
             }
         });
     }

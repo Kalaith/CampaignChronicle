@@ -1,5 +1,5 @@
 import React from 'react';
-import { useCampaignStore } from '../stores/campaignStore';
+import { useApiCampaignStore } from '../stores/apiCampaignStore';
 import { NotesView } from '../components/NotesView';
 
 const NotesPage: React.FC = () => {
@@ -9,7 +9,7 @@ const NotesPage: React.FC = () => {
     addNote,
     updateNote,
     deleteNote
-  } = useCampaignStore();
+  } = useApiCampaignStore();
 
   if (!currentCampaign) {
     return null;

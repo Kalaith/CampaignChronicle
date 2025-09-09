@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { useCampaignStore } from '../stores/campaignStore';
+import { useApiCampaignStore } from '../stores/apiCampaignStore';
 import { MainLayout } from '../components/MainLayout';
 import DashboardPage from './DashboardPage';
 import CharactersPage from './CharactersPage';
@@ -20,7 +20,7 @@ const CampaignLayoutPage: React.FC = () => {
     items,
     notes,
     relationships
-  } = useCampaignStore();
+  } = useApiCampaignStore();
   const navigate = useNavigate();
 
   if (!currentCampaign) {

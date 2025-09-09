@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useCampaignStore } from '../stores/campaignStore';
+import { useApiCampaignStore } from '../stores/apiCampaignStore';
 import { migrateLegacyData } from '../utils/localStorage';
 import { CampaignSelection } from '../components/CampaignSelection';
 import { NewCampaignModal } from '../components/Modal';
@@ -10,24 +10,50 @@ interface CampaignSelectionPageProps {
 }
 
 const CampaignSelectionPage: React.FC<CampaignSelectionPageProps> = ({ onCampaignSelected }) => {
-  const { campaigns, createCampaign, selectCampaign, deleteCampaign } = useCampaignStore();
+  const { campaigns, createCampaign, selectCampaign, deleteCampaign, loadCampaigns, isLoading, error } = useApiCampaignStore();
   const [isNewCampaignModalOpen, setIsNewCampaignModalOpen] = useState(false);
 
-  // Migrate legacy localStorage data on app start
+  // Load campaigns on mount
   useEffect(() => {
-    migrateLegacyData();
-  }, []);
+    loadCampaigns();
+  }, [loadCampaigns]);
 
-  const handleCreateCampaign = (name: string, description: string) => {
-    const newCampaign = createCampaign({ name, description });
-    selectCampaign(newCampaign);
-    onCampaignSelected();
+  const handleCreateCampaign = async (name: string, description: string) => {
+    try {
+      const newCampaign = await createCampaign({ name, description });
+      await selectCampaign(newCampaign);
+      onCampaignSelected();
+    } catch (error) {
+      console.error('Failed to create campaign:', error);
+    }
   };
 
-  const handleSelectCampaign = (campaign: Campaign) => {
-    selectCampaign(campaign);
-    onCampaignSelected();
+  const handleSelectCampaign = async (campaign: Campaign) => {
+    try {
+      await selectCampaign(campaign);
+      onCampaignSelected();
+    } catch (error) {
+      console.error('Failed to select campaign:', error);
+    }
   };
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Connection Error</h1>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="text-sm text-gray-500">Make sure the backend server is running on port 3001</p>
+          <button 
+            onClick={() => loadCampaigns()} 
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -36,6 +62,7 @@ const CampaignSelectionPage: React.FC<CampaignSelectionPageProps> = ({ onCampaig
         onSelectCampaign={handleSelectCampaign}
         onCreateCampaign={() => setIsNewCampaignModalOpen(true)}
         onDeleteCampaign={deleteCampaign}
+        isLoading={isLoading}
       />
       <NewCampaignModal
         isOpen={isNewCampaignModalOpen}

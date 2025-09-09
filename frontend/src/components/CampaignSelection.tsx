@@ -5,13 +5,15 @@ interface CampaignSelectionProps {
   onSelectCampaign: (campaign: Campaign) => void;
   onCreateCampaign: () => void;
   onDeleteCampaign: (campaignId: string) => void;
+  isLoading?: boolean;
 }
 
 export const CampaignSelection = ({ 
   campaigns, 
   onSelectCampaign, 
   onCreateCampaign,
-  onDeleteCampaign 
+  onDeleteCampaign,
+  isLoading 
 }: CampaignSelectionProps) => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -37,48 +39,58 @@ export const CampaignSelection = ({
           </div>
 
           {/* Existing Campaigns */}
-          {campaigns.map((campaign) => (
-            <div 
-              key={campaign.id}
-              className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200"
-            >
+          {isLoading ? (
+            <div className="col-span-full text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="mt-4 text-gray-600">Loading campaigns...</p>
+            </div>
+          ) : campaigns.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <p className="text-gray-600 text-lg">No campaigns yet. Create your first campaign to get started!</p>
+            </div>
+          ) : (
+            campaigns.map((campaign) => (
               <div 
-                onClick={() => onSelectCampaign(campaign)}
-                className="p-6 cursor-pointer"
+                key={campaign.id}
+                className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200"
               >
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {campaign.name}
-                </h3>
-                <p className="text-gray-600 mb-4 line-clamp-3">
-                  {campaign.description || 'No description'}
-                </p>
-                <div className="text-sm text-gray-500">
-                  Created: {new Date(campaign.createdAt).toLocaleDateString()}
+                <div 
+                  onClick={() => onSelectCampaign(campaign)}
+                  className="p-6 cursor-pointer"
+                >
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    {campaign.name}
+                  </h3>
+                  <p className="text-gray-600 mb-4 line-clamp-3">
+                    {campaign.description || 'No description'}
+                  </p>
+                  <div className="text-sm text-gray-500">
+                    Created: {new Date(campaign.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+                
+                <div className="px-6 pb-4 flex justify-between items-center">
+                  <button
+                    onClick={() => onSelectCampaign(campaign)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    Open Campaign
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Delete campaign "${campaign.name}"? This action cannot be undone.`)) {
+                        onDeleteCampaign(campaign.id);
+                      }
+                    }}
+                    className="px-3 py-1 text-red-600 hover:bg-red-50 rounded-md transition-colors text-sm"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
-              
-              <div className="px-6 pb-4 flex justify-between items-center">
-                <button
-                  onClick={() => onSelectCampaign(campaign)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
-                >
-                  Open Campaign
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (confirm(`Delete campaign "${campaign.name}"? This action cannot be undone.`)) {
-                      onDeleteCampaign(campaign.id);
-                    }
-                  }}
-                  className="px-3 py-1 text-red-600 hover:bg-red-50 rounded-md transition-colors text-sm"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))
+          )}</div>
       </div>
     </div>
   );

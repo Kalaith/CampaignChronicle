@@ -1,5 +1,5 @@
 import React from 'react';
-import { useCampaignStore } from '../stores/campaignStore';
+import { useApiCampaignStore } from '../stores/apiCampaignStore';
 import { RelationshipsView } from '../components/RelationshipsView';
 
 const RelationshipsPage: React.FC = () => {
@@ -9,7 +9,7 @@ const RelationshipsPage: React.FC = () => {
     relationships,
     addRelationship,
     deleteRelationship
-  } = useCampaignStore();
+  } = useApiCampaignStore();
 
   if (!currentCampaign) {
     return null;
