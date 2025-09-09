@@ -1,13 +1,18 @@
+import { useState } from 'react';
 import type { Character, Location, Item, Note } from '../types';
+import { DataManagement } from './DataManagement';
+import { DashboardCharts } from './DashboardCharts';
 
 interface DashboardProps {
   characters: Character[];
   locations: Location[];
   items: Item[];
   notes: Note[];
+  onNavigateToView: (view: string) => void;
 }
 
-export const Dashboard = ({ characters, locations, items, notes }: DashboardProps) => {
+export const Dashboard = ({ characters, locations, items, notes, onNavigateToView }: DashboardProps) => {
+  const [isDataManagementOpen, setIsDataManagementOpen] = useState(false);
   const stats = [
     { label: 'Characters', count: characters.length, icon: '👥' },
     { label: 'Locations', count: locations.length, icon: '🏰' },
@@ -28,6 +33,12 @@ export const Dashboard = ({ characters, locations, items, notes }: DashboardProp
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Campaign Dashboard</h2>
+        <button
+          onClick={() => setIsDataManagementOpen(true)}
+          className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors text-sm"
+        >
+          💾 Data Management
+        </button>
       </div>
 
       {/* Quick Stats */}
@@ -100,24 +111,50 @@ export const Dashboard = ({ characters, locations, items, notes }: DashboardProp
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button className="p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={() => onNavigateToView('characters')}
+            className="p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
             <div className="text-2xl mb-2">👤</div>
             <div className="text-sm font-medium">Add Character</div>
           </button>
-          <button className="p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={() => onNavigateToView('locations')}
+            className="p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
             <div className="text-2xl mb-2">🏰</div>
             <div className="text-sm font-medium">Add Location</div>
           </button>
-          <button className="p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={() => onNavigateToView('items')}
+            className="p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
             <div className="text-2xl mb-2">⚔️</div>
             <div className="text-sm font-medium">Add Item</div>
           </button>
-          <button className="p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={() => onNavigateToView('notes')}
+            className="p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
             <div className="text-2xl mb-2">📝</div>
             <div className="text-sm font-medium">Add Note</div>
           </button>
         </div>
       </div>
+
+      {/* Dashboard Analytics */}
+      <DashboardCharts
+        characters={characters}
+        locations={locations}
+        items={items}
+        notes={notes}
+      />
+
+      {/* Data Management Modal */}
+      <DataManagement
+        isOpen={isDataManagementOpen}
+        onClose={() => setIsDataManagementOpen(false)}
+      />
     </div>
   );
 };

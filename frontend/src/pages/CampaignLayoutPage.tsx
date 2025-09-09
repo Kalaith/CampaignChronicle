@@ -10,7 +10,17 @@ import NotesPage from './NotesPage';
 import RelationshipsPage from './RelationshipsPage';
 
 const CampaignLayoutPage: React.FC = () => {
-  const { currentCampaign, currentView, setCurrentView, selectCampaign } = useCampaignStore();
+  const { 
+    currentCampaign, 
+    currentView, 
+    setCurrentView, 
+    selectCampaign,
+    characters,
+    locations,
+    items,
+    notes,
+    relationships
+  } = useCampaignStore();
   const navigate = useNavigate();
 
   if (!currentCampaign) {
@@ -24,8 +34,29 @@ const CampaignLayoutPage: React.FC = () => {
   };
 
   const handleViewChange = (view: string) => {
-    setCurrentView(view);
-    navigate(`/campaign/${view}`);
+    const validViews = ['dashboard', 'characters', 'locations', 'items', 'relationships', 'notes'] as const;
+    type ValidView = typeof validViews[number];
+    if (validViews.includes(view as ValidView)) {
+      setCurrentView(view as ValidView);
+      navigate(`/campaign/${view}`);
+    }
+  };
+
+  const handleSearchResultClick = (result: any) => {
+    console.log('Search result clicked:', result);
+  };
+
+  const handleNavigateToView = (view: string) => {
+    handleViewChange(view);
+  };
+
+  // Filter data for current campaign
+  const campaignData = {
+    characters: characters.filter(c => c.campaignId === currentCampaign.id),
+    locations: locations.filter(l => l.campaignId === currentCampaign.id),
+    items: items.filter(i => i.campaignId === currentCampaign.id),
+    notes: notes.filter(n => n.campaignId === currentCampaign.id),
+    relationships: relationships.filter(r => r.campaignId === currentCampaign.id),
   };
 
   return (
@@ -34,6 +65,13 @@ const CampaignLayoutPage: React.FC = () => {
       currentView={currentView}
       onViewChange={handleViewChange}
       onBackToCampaigns={handleBackToCampaigns}
+      characters={campaignData.characters}
+      locations={campaignData.locations}
+      items={campaignData.items}
+      notes={campaignData.notes}
+      relationships={campaignData.relationships}
+      onSearchResultClick={handleSearchResultClick}
+      onNavigateToView={handleNavigateToView}
     >
       <Routes>
         <Route path="/" element={<DashboardPage />} />

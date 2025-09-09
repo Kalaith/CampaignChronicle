@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Relationship, Character } from '../types';
 import { Modal } from './Modal';
+import { RelationshipGraph } from './RelationshipGraph';
 
 interface RelationshipsViewProps {
   relationships: Relationship[];
@@ -217,6 +218,15 @@ export const RelationshipsView = ({
           <option value="neutral">Neutral</option>
         </select>
       </div>
+
+      {/* Relationship Graph */}
+      {relationships.length > 0 && (
+        <RelationshipGraph
+          characters={characters}
+          relationships={relationships}
+          onCharacterClick={(character) => console.log('Character clicked:', character)}
+        />
+      )}
 
       {/* Relationships List */}
       <div className="space-y-4">

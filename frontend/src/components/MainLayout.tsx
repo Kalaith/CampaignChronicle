@@ -1,11 +1,29 @@
-import type { Campaign, ViewType } from '../types';
+import type { Campaign, ViewType, Character, Location, Item, Note, Relationship } from '../types';
+import { GlobalSearch } from './GlobalSearch';
 
 interface HeaderProps {
   campaign: Campaign;
   onBackToCampaigns: () => void;
+  characters: Character[];
+  locations: Location[];
+  items: Item[];
+  notes: Note[];
+  relationships: Relationship[];
+  onSearchResultClick: (result: any) => void;
+  onNavigateToView: (view: string) => void;
 }
 
-const Header = ({ campaign, onBackToCampaigns }: HeaderProps) => (
+const Header = ({ 
+  campaign, 
+  onBackToCampaigns, 
+  characters, 
+  locations, 
+  items, 
+  notes, 
+  relationships, 
+  onSearchResultClick, 
+  onNavigateToView 
+}: HeaderProps) => (
   <header className="bg-white shadow-sm border-b border-gray-200">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between h-16">
@@ -19,6 +37,17 @@ const Header = ({ campaign, onBackToCampaigns }: HeaderProps) => (
           <h1 className="text-xl font-semibold text-gray-900">
             {campaign.name}
           </h1>
+        </div>
+        <div className="flex items-center space-x-4">
+          <GlobalSearch
+            characters={characters}
+            locations={locations}
+            items={items}
+            notes={notes}
+            relationships={relationships}
+            onResultClick={onSearchResultClick}
+            onNavigateToView={onNavigateToView}
+          />
         </div>
       </div>
     </div>
@@ -71,6 +100,13 @@ interface MainLayoutProps {
   onViewChange: (view: ViewType) => void;
   onBackToCampaigns: () => void;
   children: React.ReactNode;
+  characters: Character[];
+  locations: Location[];
+  items: Item[];
+  notes: Note[];
+  relationships: Relationship[];
+  onSearchResultClick: (result: any) => void;
+  onNavigateToView: (view: string) => void;
 }
 
 export const MainLayout = ({ 
@@ -78,11 +114,28 @@ export const MainLayout = ({
   currentView, 
   onViewChange, 
   onBackToCampaigns, 
-  children 
+  children,
+  characters,
+  locations,
+  items,
+  notes,
+  relationships,
+  onSearchResultClick,
+  onNavigateToView
 }: MainLayoutProps) => {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header campaign={campaign} onBackToCampaigns={onBackToCampaigns} />
+      <Header 
+        campaign={campaign} 
+        onBackToCampaigns={onBackToCampaigns}
+        characters={characters}
+        locations={locations}
+        items={items}
+        notes={notes}
+        relationships={relationships}
+        onSearchResultClick={onSearchResultClick}
+        onNavigateToView={onNavigateToView}
+      />
       <div className="flex">
         <Sidebar currentView={currentView} onViewChange={onViewChange} />
         <main className="flex-1 p-6">

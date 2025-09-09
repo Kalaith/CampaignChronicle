@@ -1,14 +1,17 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCampaignStore } from '../stores/campaignStore';
 import { Dashboard } from '../components/Dashboard';
 
 const DashboardPage: React.FC = () => {
+  const navigate = useNavigate();
   const {
     currentCampaign,
     characters,
     locations,
     items,
-    notes
+    notes,
+    setCurrentView
   } = useCampaignStore();
 
   if (!currentCampaign) {
@@ -23,12 +26,22 @@ const DashboardPage: React.FC = () => {
     notes: notes.filter(note => note.campaignId === currentCampaign.id),
   };
 
+  const handleNavigateToView = (view: string) => {
+    const validViews = ['dashboard', 'characters', 'locations', 'items', 'relationships', 'notes'] as const;
+    type ValidView = typeof validViews[number];
+    if (validViews.includes(view as ValidView)) {
+      setCurrentView(view as ValidView);
+      navigate(`/campaign/${view}`);
+    }
+  };
+
   return (
     <Dashboard
       characters={currentCampaignData.characters}
       locations={currentCampaignData.locations}
       items={currentCampaignData.items}
       notes={currentCampaignData.notes}
+      onNavigateToView={handleNavigateToView}
     />
   );
 };

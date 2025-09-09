@@ -61,4 +61,19 @@ export interface Relationship {
   description?: string;
 }
 
-export type ViewType = 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes';
+export interface TimelineEvent {
+  id: string;
+  campaignId: string;
+  title: string;
+  description?: string;
+  date: string; // In-game date or session date
+  sessionNumber?: number;
+  type: 'session' | 'story' | 'character' | 'location' | 'combat' | 'milestone';
+  tags: string[];
+  relatedCharacters?: string[]; // Character IDs
+  relatedLocations?: string[]; // Location IDs
+  createdAt: string;
+  lastModified: string;
+}
+
+export type ViewType = 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline';

@@ -1,6 +1,31 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Campaign, Character, Location, Item, Note, Relationship } from '../types';
+import type { Campaign, Character, Location, Item, Note, Relationship, TimelineEvent } from '../types';
+
+// Type guard functions
+const isValidImportData = (data: unknown): data is {
+  campaign: Campaign;
+  characters: Character[];
+  locations: Location[];
+  items: Item[];
+  notes: Note[];
+  relationships: Relationship[];
+} => {
+  return typeof data === 'object' && data !== null && 'campaign' in data;
+};
+
+const isValidBackupData = (data: unknown): data is {
+  campaigns: Campaign[];
+  currentCampaign: Campaign | null;
+  characters: Character[];
+  locations: Location[];
+  items: Item[];
+  notes: Note[];
+  relationships: Relationship[];
+  currentView?: string;
+} => {
+  return typeof data === 'object' && data !== null && 'campaigns' in data;
+};
 
 interface CampaignState {
   campaigns: Campaign[];
@@ -10,7 +35,8 @@ interface CampaignState {
   items: Item[];
   notes: Note[];
   relationships: Relationship[];
-  currentView: 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes';
+  timelineEvents: TimelineEvent[];
+  currentView: 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline';
 }
 
 interface CampaignActions {
@@ -45,8 +71,17 @@ interface CampaignActions {
   updateRelationship: (relationshipId: string, updates: Partial<Relationship>) => void;
   deleteRelationship: (relationshipId: string) => void;
 
+  // Timeline Management
+  addTimelineEvent: (event: Omit<TimelineEvent, 'id' | 'createdAt' | 'lastModified'>) => void;
+  updateTimelineEvent: (eventId: string, updates: Partial<TimelineEvent>) => void;
+  deleteTimelineEvent: (eventId: string) => void;
+
   // View Management
-  setCurrentView: (view: 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes') => void;
+  setCurrentView: (view: 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline') => void;
+
+  // Import/Export Functions
+  importCampaignData: (data: unknown) => void;
+  importFullBackup: (data: unknown) => void;
 
   // Utility Functions
   clearAll: () => void;
@@ -67,6 +102,7 @@ export const useCampaignStore = create<CampaignStore>()(
       items: [],
       notes: [],
       relationships: [],
+      timelineEvents: [],
       currentView: 'dashboard',
 
       // Campaign Actions
@@ -109,6 +145,7 @@ export const useCampaignStore = create<CampaignStore>()(
           items: state.items.filter(item => item.campaignId !== campaignId),
           notes: state.notes.filter(note => note.campaignId !== campaignId),
           relationships: state.relationships.filter(relationship => relationship.campaignId !== campaignId),
+          timelineEvents: state.timelineEvents.filter(event => event.campaignId !== campaignId),
         })),
 
       // Character Actions
@@ -217,9 +254,128 @@ export const useCampaignStore = create<CampaignStore>()(
           relationships: state.relationships.filter(relationship => relationship.id !== relationshipId),
         })),
 
+      // Timeline Actions
+      addTimelineEvent: (eventData) =>
+        set((state) => {
+          const timestamp = new Date().toISOString();
+          return {
+            timelineEvents: [
+              ...state.timelineEvents,
+              {
+                ...eventData,
+                id: generateId(),
+                createdAt: timestamp,
+                lastModified: timestamp,
+              },
+            ],
+          };
+        }),
+
+      updateTimelineEvent: (eventId, updates) =>
+        set((state) => ({
+          timelineEvents: state.timelineEvents.map(event =>
+            event.id === eventId
+              ? { ...event, ...updates, lastModified: new Date().toISOString() }
+              : event
+          ),
+        })),
+
+      deleteTimelineEvent: (eventId) =>
+        set((state) => ({
+          timelineEvents: state.timelineEvents.filter(event => event.id !== eventId),
+        })),
+
       // View Management
       setCurrentView: (view) =>
         set({ currentView: view }),
+
+      // Import/Export Functions
+      importCampaignData: (data) => {
+        if (!isValidImportData(data)) {
+          console.error('Invalid import data format');
+          return;
+        }
+
+        set((state) => {
+          // Generate new IDs for imported data to avoid conflicts
+          const newCampaignId = generateId();
+          const campaign = {
+            ...data.campaign,
+            id: newCampaignId,
+            name: `${data.campaign.name} (Imported)`,
+            lastModified: new Date().toISOString(),
+          };
+
+          // Map old IDs to new IDs for relationships
+          const idMap = new Map<string, string>();
+          
+          const characters = data.characters.map((char) => {
+            const newId = generateId();
+            idMap.set(char.id, newId);
+            return { ...char, id: newId, campaignId: newCampaignId };
+          });
+
+          const locations = data.locations.map((loc) => ({
+            ...loc,
+            id: generateId(),
+            campaignId: newCampaignId,
+            parentId: loc.parentId ? idMap.get(loc.parentId) || undefined : undefined,
+          }));
+
+          const items = data.items.map((item) => ({
+            ...item,
+            id: generateId(),
+            campaignId: newCampaignId,
+            owner: item.owner ? idMap.get(item.owner) || item.owner : undefined,
+          }));
+
+          const notes = data.notes.map((note) => ({
+            ...note,
+            id: generateId(),
+            campaignId: newCampaignId,
+          }));
+
+          const relationships = data.relationships.map((rel) => ({
+            ...rel,
+            id: generateId(),
+            campaignId: newCampaignId,
+            from: idMap.get(rel.from) || rel.from,
+            to: idMap.get(rel.to) || rel.to,
+          }));
+
+          return {
+            campaigns: [...state.campaigns, campaign],
+            characters: [...state.characters, ...characters],
+            locations: [...state.locations, ...locations],
+            items: [...state.items, ...items],
+            notes: [...state.notes, ...notes],
+            relationships: [...state.relationships, ...relationships],
+            currentCampaign: campaign,
+          };
+        });
+      },
+
+      importFullBackup: (data) => {
+        if (!isValidBackupData(data)) {
+          console.error('Invalid backup data format');
+          return;
+        }
+
+        if (confirm('This will replace ALL your current data. Are you sure you want to continue?')) {
+          set({
+            campaigns: data.campaigns || [],
+            currentCampaign: data.currentCampaign || null,
+            characters: data.characters || [],
+            locations: data.locations || [],
+            items: data.items || [],
+            notes: data.notes || [],
+            relationships: data.relationships || [],
+            currentView: (data.currentView && ['dashboard', 'characters', 'locations', 'items', 'relationships', 'notes'].includes(data.currentView) 
+              ? data.currentView 
+              : 'dashboard') as 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes',
+          });
+        }
+      },
 
       // Utility
       clearAll: () =>
@@ -231,6 +387,7 @@ export const useCampaignStore = create<CampaignStore>()(
           items: [],
           notes: [],
           relationships: [],
+          timelineEvents: [],
           currentView: 'dashboard',
         }),
     }),
@@ -244,6 +401,7 @@ export const useCampaignStore = create<CampaignStore>()(
         items: state.items,
         notes: state.notes,
         relationships: state.relationships,
+        timelineEvents: state.timelineEvents,
         currentView: state.currentView,
       }),
     }

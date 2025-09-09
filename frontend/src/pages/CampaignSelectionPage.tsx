@@ -3,6 +3,7 @@ import { useCampaignStore } from '../stores/campaignStore';
 import { migrateLegacyData } from '../utils/localStorage';
 import { CampaignSelection } from '../components/CampaignSelection';
 import { NewCampaignModal } from '../components/Modal';
+import type { Campaign } from '../types';
 
 interface CampaignSelectionPageProps {
   onCampaignSelected: () => void;
@@ -23,7 +24,7 @@ const CampaignSelectionPage: React.FC<CampaignSelectionPageProps> = ({ onCampaig
     onCampaignSelected();
   };
 
-  const handleSelectCampaign = (campaign: any) => {
+  const handleSelectCampaign = (campaign: Campaign) => {
     selectCampaign(campaign);
     onCampaignSelected();
   };
