@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Base API response structure
 interface ApiResponse<T> {
@@ -26,6 +26,13 @@ class ApiError extends Error {
   }
 }
 
+// Get auth headers from localStorage using frontpage token key
+// Also rely on session cookies for Auth0 authentication
+function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem('token');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
 // Generic API request function
 async function apiRequest<T>(
   endpoint: string,
@@ -35,10 +42,12 @@ async function apiRequest<T>(
   
   const defaultHeaders = {
     'Content-Type': 'application/json',
+    ...getAuthHeaders(),
   };
 
   const config: RequestInit = {
     ...options,
+    credentials: 'include', // Include cookies for Auth0 session
     headers: {
       ...defaultHeaders,
       ...options.headers,

@@ -12,16 +12,21 @@ use Psr\Http\Message\ServerRequestInterface;
 class CampaignController extends BaseController
 {
     /**
-     * List all campaigns.
+     * List all campaigns for the authenticated user.
      */
     public function index(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         try {
+            $userId = $this->getUserId($request);
+            if (!$userId) {
+                return $this->error($response, 'User not authenticated', 401);
+            }
+
             $queryParams = $this->getQueryParams($request);
             $pagination = $this->getPaginationParams($queryParams);
             $filters = $this->getSearchParams($queryParams);
 
-            $query = Campaign::query();
+            $query = Campaign::query()->forUser($userId);
             
             // Apply filters
             if (!empty($filters['search'])) {
@@ -44,7 +49,12 @@ class CampaignController extends BaseController
     public function show(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['id']);
+            $userId = $this->getUserId($request);
+            if (!$userId) {
+                return $this->error($response, 'User not authenticated', 401);
+            }
+
+            $campaign = Campaign::where('id', $args['id'])->forUser($userId)->first();
             
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
@@ -84,6 +94,11 @@ class CampaignController extends BaseController
     public function create(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         try {
+            $userId = $this->getUserId($request);
+            if (!$userId) {
+                return $this->error($response, 'User not authenticated', 401);
+            }
+
             $data = $this->getRequestData($request);
             $data = ValidationService::sanitizeInput($data);
             
@@ -94,6 +109,7 @@ class CampaignController extends BaseController
             }
 
             $campaign = Campaign::create([
+                'user_id' => $userId,
                 'name' => $data['name'],
                 'description' => $data['description'] ?? null,
             ]);

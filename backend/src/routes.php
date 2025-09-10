@@ -9,6 +9,7 @@ use App\Controllers\ItemController;
 use App\Controllers\NoteController;
 use App\Controllers\RelationshipController;
 use App\Controllers\TimelineEventController;
+use App\Controllers\Auth0Controller;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -28,8 +29,34 @@ return function (App $app) {
     // API routes group with CORS middleware
     $app->group('/api', function (RouteCollectorProxy $group) {
         
-        // Campaign routes
-        $group->group('/campaigns', function (RouteCollectorProxy $campaigns) {
+        // Auth0 endpoints
+        $group->group('/auth', function (RouteCollectorProxy $auth) {
+            $auth->post('/verify-user', [Auth0Controller::class, 'verifyUser'])->add(new \App\Middleware\Auth0Middleware());
+            $auth->get('/current-user', [Auth0Controller::class, 'getCurrentUser'])->add(new \App\Middleware\Auth0Middleware());
+            $auth->get('/validate-session', [Auth0Controller::class, 'validateSession'])->add(new \App\Middleware\Auth0Middleware());
+            
+            // Debug endpoint
+            $auth->get('/debug', function (Request $request, Response $response) {
+                $auth0User = $request->getAttribute('auth0_user');
+                $user = $request->getAttribute('user');
+                
+                $debug = [
+                    'auth0_user' => $auth0User,
+                    'user' => $user,
+                    'has_auth0_user' => $auth0User !== null,
+                    'has_user' => $user !== null
+                ];
+                
+                $response->getBody()->write(json_encode($debug, JSON_PRETTY_PRINT));
+                return $response->withHeader('Content-Type', 'application/json');
+            })->add(new \App\Middleware\Auth0Middleware());
+        });
+        
+        // Protected routes (require authentication)
+        $group->group('', function (RouteCollectorProxy $protected) {
+        
+            // Campaign routes
+            $protected->group('/campaigns', function (RouteCollectorProxy $campaigns) {
             $campaigns->get('', [CampaignController::class, 'index']);
             $campaigns->post('', [CampaignController::class, 'create']);
             $campaigns->get('/{id}', [CampaignController::class, 'show']);
@@ -70,100 +97,102 @@ return function (App $app) {
                 }
             });
             
-            // Character routes within campaigns
-            $campaigns->group('/{campaign_id}/characters', function (RouteCollectorProxy $characters) {
-                $characters->get('', [CharacterController::class, 'index']);
-                $characters->post('', [CharacterController::class, 'create']);
+                // Character routes within campaigns
+                $campaigns->group('/{campaign_id}/characters', function (RouteCollectorProxy $characters) {
+                    $characters->get('', [CharacterController::class, 'index']);
+                    $characters->post('', [CharacterController::class, 'create']);
+                });
+
+                // Location routes within campaigns
+                $campaigns->group('/{campaign_id}/locations', function (RouteCollectorProxy $locations) {
+                    $locations->get('', [LocationController::class, 'index']);
+                    $locations->post('', [LocationController::class, 'create']);
+                    $locations->get('/hierarchy', [LocationController::class, 'hierarchy']);
+                });
+
+                // Item routes within campaigns
+                $campaigns->group('/{campaign_id}/items', function (RouteCollectorProxy $items) {
+                    $items->get('', [ItemController::class, 'index']);
+                    $items->post('', [ItemController::class, 'create']);
+                });
+
+                // Note routes within campaigns
+                $campaigns->group('/{campaign_id}/notes', function (RouteCollectorProxy $notes) {
+                    $notes->get('', [NoteController::class, 'index']);
+                    $notes->post('', [NoteController::class, 'create']);
+                    $notes->get('/search', [NoteController::class, 'search']);
+                    $notes->get('/statistics', [NoteController::class, 'statistics']);
+                });
+
+                // Relationship routes within campaigns
+                $campaigns->group('/{campaign_id}/relationships', function (RouteCollectorProxy $relationships) {
+                    $relationships->get('', [RelationshipController::class, 'index']);
+                    $relationships->post('', [RelationshipController::class, 'create']);
+                    $relationships->get('/network', [RelationshipController::class, 'network']);
+                    $relationships->get('/statistics', [RelationshipController::class, 'statistics']);
+                    $relationships->get('/find-path', [RelationshipController::class, 'findPath']);
+                });
+
+                // Timeline event routes within campaigns
+                $campaigns->group('/{campaign_id}/timeline', function (RouteCollectorProxy $timeline) {
+                    $timeline->get('', [TimelineEventController::class, 'index']);
+                    $timeline->post('', [TimelineEventController::class, 'create']);
+                    $timeline->get('/grouped', [TimelineEventController::class, 'groupedBySessions']);
+                    $timeline->get('/statistics', [TimelineEventController::class, 'statistics']);
+                    $timeline->get('/activity', [TimelineEventController::class, 'activity']);
+                    $timeline->get('/mentions', [TimelineEventController::class, 'mentions']);
+                    $timeline->get('/characters/{character_id}/involvement', [TimelineEventController::class, 'characterInvolvement']);
+                    $timeline->get('/locations/{location_id}/history', [TimelineEventController::class, 'locationHistory']);
+                });
             });
 
-            // Location routes within campaigns
-            $campaigns->group('/{campaign_id}/locations', function (RouteCollectorProxy $locations) {
-                $locations->get('', [LocationController::class, 'index']);
-                $locations->post('', [LocationController::class, 'create']);
-                $locations->get('/hierarchy', [LocationController::class, 'hierarchy']);
+            // Individual entity routes (accessed by ID across all campaigns)
+            $protected->group('/characters', function (RouteCollectorProxy $characters) {
+                $characters->get('/{id}', [CharacterController::class, 'show']);
+                $characters->put('/{id}', [CharacterController::class, 'update']);
+                $characters->delete('/{id}', [CharacterController::class, 'delete']);
+                $characters->get('/{id}/relationships', [CharacterController::class, 'relationships']);
             });
 
-            // Item routes within campaigns
-            $campaigns->group('/{campaign_id}/items', function (RouteCollectorProxy $items) {
-                $items->get('', [ItemController::class, 'index']);
-                $items->post('', [ItemController::class, 'create']);
+            $protected->group('/locations', function (RouteCollectorProxy $locations) {
+                $locations->get('/{id}', [LocationController::class, 'show']);
+                $locations->put('/{id}', [LocationController::class, 'update']);
+                $locations->delete('/{id}', [LocationController::class, 'delete']);
+                $locations->get('/{id}/items', [LocationController::class, 'items']);
             });
 
-            // Note routes within campaigns
-            $campaigns->group('/{campaign_id}/notes', function (RouteCollectorProxy $notes) {
-                $notes->get('', [NoteController::class, 'index']);
-                $notes->post('', [NoteController::class, 'create']);
-                $notes->get('/search', [NoteController::class, 'search']);
-                $notes->get('/statistics', [NoteController::class, 'statistics']);
+            $protected->group('/items', function (RouteCollectorProxy $items) {
+                $items->get('/{id}', [ItemController::class, 'show']);
+                $items->put('/{id}', [ItemController::class, 'update']);
+                $items->delete('/{id}', [ItemController::class, 'delete']);
+                $items->post('/{id}/transfer', [ItemController::class, 'transfer']);
+                $items->get('/{id}/history', [ItemController::class, 'history']);
             });
 
-            // Relationship routes within campaigns
-            $campaigns->group('/{campaign_id}/relationships', function (RouteCollectorProxy $relationships) {
-                $relationships->get('', [RelationshipController::class, 'index']);
-                $relationships->post('', [RelationshipController::class, 'create']);
-                $relationships->get('/network', [RelationshipController::class, 'network']);
-                $relationships->get('/statistics', [RelationshipController::class, 'statistics']);
-                $relationships->get('/find-path', [RelationshipController::class, 'findPath']);
+            $protected->group('/notes', function (RouteCollectorProxy $notes) {
+                $notes->get('/{id}', [NoteController::class, 'show']);
+                $notes->put('/{id}', [NoteController::class, 'update']);
+                $notes->delete('/{id}', [NoteController::class, 'delete']);
+                $notes->get('/{id}/references', [NoteController::class, 'references']);
             });
 
-            // Timeline event routes within campaigns
-            $campaigns->group('/{campaign_id}/timeline', function (RouteCollectorProxy $timeline) {
-                $timeline->get('', [TimelineEventController::class, 'index']);
-                $timeline->post('', [TimelineEventController::class, 'create']);
-                $timeline->get('/grouped', [TimelineEventController::class, 'groupedBySessions']);
-                $timeline->get('/statistics', [TimelineEventController::class, 'statistics']);
-                $timeline->get('/activity', [TimelineEventController::class, 'activity']);
-                $timeline->get('/mentions', [TimelineEventController::class, 'mentions']);
-                $timeline->get('/characters/{character_id}/involvement', [TimelineEventController::class, 'characterInvolvement']);
-                $timeline->get('/locations/{location_id}/history', [TimelineEventController::class, 'locationHistory']);
+            $protected->group('/relationships', function (RouteCollectorProxy $relationships) {
+                $relationships->get('/{id}', [RelationshipController::class, 'show']);
+                $relationships->put('/{id}', [RelationshipController::class, 'update']);
+                $relationships->delete('/{id}', [RelationshipController::class, 'delete']);
             });
-        });
 
-        // Individual entity routes (accessed by ID across all campaigns)
-        $group->group('/characters', function (RouteCollectorProxy $characters) {
-            $characters->get('/{id}', [CharacterController::class, 'show']);
-            $characters->put('/{id}', [CharacterController::class, 'update']);
-            $characters->delete('/{id}', [CharacterController::class, 'delete']);
-            $characters->get('/{id}/relationships', [CharacterController::class, 'relationships']);
-        });
+            $protected->group('/timeline', function (RouteCollectorProxy $timeline) {
+                $timeline->get('/{id}', [TimelineEventController::class, 'show']);
+                $timeline->put('/{id}', [TimelineEventController::class, 'update']);
+                $timeline->delete('/{id}', [TimelineEventController::class, 'delete']);
+                $timeline->post('/{id}/entities', [TimelineEventController::class, 'addRelatedEntity']);
+            });
 
-        $group->group('/locations', function (RouteCollectorProxy $locations) {
-            $locations->get('/{id}', [LocationController::class, 'show']);
-            $locations->put('/{id}', [LocationController::class, 'update']);
-            $locations->delete('/{id}', [LocationController::class, 'delete']);
-            $locations->get('/{id}/items', [LocationController::class, 'items']);
-        });
-
-        $group->group('/items', function (RouteCollectorProxy $items) {
-            $items->get('/{id}', [ItemController::class, 'show']);
-            $items->put('/{id}', [ItemController::class, 'update']);
-            $items->delete('/{id}', [ItemController::class, 'delete']);
-            $items->post('/{id}/transfer', [ItemController::class, 'transfer']);
-            $items->get('/{id}/history', [ItemController::class, 'history']);
-        });
-
-        $group->group('/notes', function (RouteCollectorProxy $notes) {
-            $notes->get('/{id}', [NoteController::class, 'show']);
-            $notes->put('/{id}', [NoteController::class, 'update']);
-            $notes->delete('/{id}', [NoteController::class, 'delete']);
-            $notes->get('/{id}/references', [NoteController::class, 'references']);
-        });
-
-        $group->group('/relationships', function (RouteCollectorProxy $relationships) {
-            $relationships->get('/{id}', [RelationshipController::class, 'show']);
-            $relationships->put('/{id}', [RelationshipController::class, 'update']);
-            $relationships->delete('/{id}', [RelationshipController::class, 'delete']);
-        });
-
-        $group->group('/timeline', function (RouteCollectorProxy $timeline) {
-            $timeline->get('/{id}', [TimelineEventController::class, 'show']);
-            $timeline->put('/{id}', [TimelineEventController::class, 'update']);
-            $timeline->delete('/{id}', [TimelineEventController::class, 'delete']);
-            $timeline->post('/{id}/entities', [TimelineEventController::class, 'addRelatedEntity']);
-        });
-
-        // Import endpoint (creates new campaign)
-        $group->post('/import', [CampaignController::class, 'import']);
+            // Import endpoint (creates new campaign)
+            $protected->post('/import', [CampaignController::class, 'import']);
+            
+        })->add(new \App\Middleware\Auth0Middleware());
         
     })->add(new \App\Middleware\CorsMiddleware());
 

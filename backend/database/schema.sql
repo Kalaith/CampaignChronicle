@@ -143,15 +143,20 @@ CREATE TABLE timeline_events (
     FULLTEXT idx_timeline_search (title, description)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Future: Users table (for authentication)
+-- Users table (for Auth0 authentication)
 CREATE TABLE users (
     id VARCHAR(36) PRIMARY KEY,
+    auth0_id VARCHAR(255) UNIQUE NOT NULL,
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
+    display_name VARCHAR(255) NOT NULL,
+    role ENUM('user', 'admin', 'dm') NOT NULL DEFAULT 'user',
+    is_verified BOOLEAN NOT NULL DEFAULT false,
+    password_hash VARCHAR(255) NULL, -- Optional for Auth0 users
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
+    INDEX idx_users_auth0_id (auth0_id),
     INDEX idx_users_username (username),
     INDEX idx_users_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

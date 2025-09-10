@@ -1,5 +1,6 @@
 import type { Campaign, ViewType, Character, Location, Item, Note, Relationship } from '../types';
 import { GlobalSearch } from './GlobalSearch';
+import UserMenu from './UserMenu';
 
 interface HeaderProps {
   campaign: Campaign;
@@ -48,6 +49,7 @@ const Header = ({
             onResultClick={onSearchResultClick}
             onNavigateToView={onNavigateToView}
           />
+          <UserMenu />
         </div>
       </div>
     </div>

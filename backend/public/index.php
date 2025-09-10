@@ -56,7 +56,7 @@ $app = AppFactory::create();
 
 // Set base path for subdirectory deployment (preview environment)
 if (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'preview') {
-    $app->setBasePath('/blacksmith_forge');
+    $app->setBasePath('/campaign_chronicle');
 }
 
 // Add middleware

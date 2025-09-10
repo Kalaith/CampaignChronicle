@@ -96,6 +96,30 @@ abstract class BaseController
     }
 
     /**
+     * Get authenticated user from request.
+     */
+    protected function getUser(ServerRequestInterface $request): ?array
+    {
+        return $request->getAttribute('user');
+    }
+
+    /**
+     * Get authenticated user ID from request.
+     */
+    protected function getUserId(ServerRequestInterface $request): ?int
+    {
+        return $request->getAttribute('user_id');
+    }
+
+    /**
+     * Apply user filtering to query.
+     */
+    protected function filterByUser($query, int $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
+
+    /**
      * Validate required fields in request data.
      */
     protected function validateRequired(array $data, array $required): array

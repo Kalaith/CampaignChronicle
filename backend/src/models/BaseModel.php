@@ -27,6 +27,17 @@ abstract class BaseModel extends Model
     ];
 
     /**
+     * The attributes that are mass assignable.
+     */
+    protected $fillable = [
+        'user_id',
+        'name',
+        'title',
+        'description',
+        'tags'
+    ];
+
+    /**
      * Boot the model and generate UUID on creation.
      */
     public function __construct(array $attributes = [])
@@ -125,5 +136,13 @@ abstract class BaseModel extends Model
             ->unique()
             ->values()
             ->toArray();
+    }
+
+    /**
+     * Scope a query to filter by user.
+     */
+    public function scopeForUser($query, int $userId)
+    {
+        return $query->where('user_id', $userId);
     }
 }
