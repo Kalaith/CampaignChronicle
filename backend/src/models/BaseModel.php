@@ -141,7 +141,7 @@ abstract class BaseModel extends Model
     /**
      * Scope a query to filter by user.
      */
-    public function scopeForUser($query, int $userId)
+    public function scopeForUser($query, string $userId)
     {
         return $query->where('user_id', $userId);
     }

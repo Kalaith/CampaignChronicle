@@ -41,8 +41,15 @@ class Auth0Middleware implements MiddlewareInterface
             // Validate the JWT token
             $decoded = $this->validateAuth0Token($token);
             
-            // Add Auth0 user info to request (don't create user here - that's for the controller)
+            // Add Auth0 user info to request
             $request = $request->withAttribute('auth0_user', $decoded);
+            
+            // Get or create user in our database
+            $user = $this->getOrCreateUser($decoded);
+            if ($user) {
+                $request = $request->withAttribute('user', $user);
+                $request = $request->withAttribute('user_id', $user['id']);
+            }
 
             return $handler->handle($request);
 

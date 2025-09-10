@@ -8,11 +8,14 @@ USE campaign_chronicle;
 -- Campaigns table
 CREATE TABLE campaigns (
     id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_campaigns_user (user_id),
     INDEX idx_campaigns_name (name),
     INDEX idx_campaigns_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

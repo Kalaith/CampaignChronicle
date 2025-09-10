@@ -43,7 +43,6 @@ const CampaignSelectionPage: React.FC<CampaignSelectionPageProps> = ({ onCampaig
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600 mb-4">Connection Error</h1>
           <p className="text-gray-600 mb-4">{error}</p>
-          <p className="text-sm text-gray-500">Make sure the backend server is running on port 3001</p>
           <button 
             onClick={() => loadCampaigns()} 
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"

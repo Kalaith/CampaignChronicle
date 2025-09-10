@@ -7,6 +7,7 @@ class Campaign extends BaseModel
     protected $table = 'campaigns';
 
     protected $fillable = [
+        'user_id',
         'name',
         'description',
     ];
@@ -15,6 +16,14 @@ class Campaign extends BaseModel
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    /**
+     * Get the user that owns the campaign.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     /**
      * Get all characters for this campaign.

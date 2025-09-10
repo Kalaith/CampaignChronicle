@@ -106,7 +106,7 @@ abstract class BaseController
     /**
      * Get authenticated user ID from request.
      */
-    protected function getUserId(ServerRequestInterface $request): ?int
+    protected function getUserId(ServerRequestInterface $request): ?string
     {
         return $request->getAttribute('user_id');
     }
@@ -114,7 +114,7 @@ abstract class BaseController
     /**
      * Apply user filtering to query.
      */
-    protected function filterByUser($query, int $userId)
+    protected function filterByUser($query, string $userId)
     {
         return $query->where('user_id', $userId);
     }

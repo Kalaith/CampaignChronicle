@@ -20,17 +20,36 @@ interface PaginatedResponse<T> {
 }
 
 class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  public status: number;
+  
+  constructor(status: number, message: string) {
     super(message);
     this.name = 'ApiError';
+    this.status = status;
   }
 }
 
-// Get auth headers from localStorage using frontpage token key
-// Also rely on session cookies for Auth0 authentication
-function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem('token');
-  return token ? { 'Authorization': `Bearer ${token}` } : {};
+// Global token provider function that will be set by the auth context
+let getAccessToken: (() => Promise<string>) | null = null;
+
+// Set the token provider (called from auth context)
+export function setTokenProvider(provider: () => Promise<string>) {
+  getAccessToken = provider;
+}
+
+// Get auth headers using Auth0 access token
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  if (!getAccessToken) {
+    throw new Error('Token provider not set. Make sure auth context is initialized.');
+  }
+  
+  try {
+    const token = await getAccessToken();
+    return { 'Authorization': `Bearer ${token}` };
+  } catch (error) {
+    console.error('Failed to get access token:', error);
+    throw new Error('Failed to get authentication token');
+  }
 }
 
 // Generic API request function
@@ -40,9 +59,10 @@ async function apiRequest<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  const authHeaders = await getAuthHeaders();
   const defaultHeaders = {
     'Content-Type': 'application/json',
-    ...getAuthHeaders(),
+    ...authHeaders,
   };
 
   const config: RequestInit = {

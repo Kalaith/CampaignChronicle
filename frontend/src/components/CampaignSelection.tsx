@@ -1,4 +1,5 @@
 import type { Campaign } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 interface CampaignSelectionProps {
   campaigns: Campaign[];
@@ -15,17 +16,43 @@ export const CampaignSelection = ({
   onDeleteCampaign,
   isLoading 
 }: CampaignSelectionProps) => {
+  const { user, logout } = useAuth();
+  
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            D&D Campaign Companion
-          </h1>
-          <p className="text-lg text-gray-600">
-            Manage your campaigns, characters, and adventures
-          </p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header with user info */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center">
+            <h2 className="text-xl font-semibold text-gray-900">Campaign Chronicle</h2>
+          </div>
+          {user && (
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-600">
+                Welcome, <span className="font-medium text-gray-900">{user.display_name}</span>
+              </span>
+              <button
+                onClick={() => logout()}
+                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* Main content */}
+      <div className="py-8">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              D&D Campaign Companion
+            </h1>
+            <p className="text-lg text-gray-600">
+              Manage your campaigns, characters, and adventures
+            </p>
+          </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* New Campaign Card */}
@@ -91,6 +118,7 @@ export const CampaignSelection = ({
               </div>
             ))
           )}</div>
+        </div>
       </div>
     </div>
   );

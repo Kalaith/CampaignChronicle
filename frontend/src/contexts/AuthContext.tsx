@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
+import { setTokenProvider } from '../services/api';
 
 // Define user type for campaign chronicle
 interface User {
@@ -55,6 +56,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [checkingUserStatus, setCheckingUserStatus] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Set up the token provider for API calls
+  useEffect(() => {
+    setTokenProvider(getAccessTokenSilently);
+  }, [getAccessTokenSilently]);
 
   /**
    * Verify user in our database and sync with Auth0 data
