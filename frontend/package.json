@@ -6,10 +6,19 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc -b && vite build", 
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "preview": "vite preview",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run", 
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "ci": "npm run lint && npm run type-check && npm run format:check && npm run test:run && npm run build",
+    "ci:quick": "npm run lint && npm run type-check && npm run format:check"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.4.0",
