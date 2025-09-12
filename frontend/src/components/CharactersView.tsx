@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Character, Location } from '../types';
 import { Modal } from './Modal';
+import { NPCGenerator } from './NPCGenerator';
 
 interface CharactersViewProps {
   characters: Character[];
@@ -193,6 +194,7 @@ export const CharactersView = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isNPCGeneratorOpen, setIsNPCGeneratorOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | undefined>();
 
   const filteredCharacters = characters.filter(character => {
@@ -235,12 +237,20 @@ export const CharactersView = ({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Characters</h2>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          + Add Character
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setIsNPCGeneratorOpen(true)}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+          >
+            🎲 Generate NPC
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            + Add Character
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -347,6 +357,13 @@ export const CharactersView = ({
         onSubmit={handleModalSubmit}
         character={editingCharacter}
         locations={locations}
+        campaignId={campaignId}
+      />
+
+      <NPCGenerator
+        isOpen={isNPCGeneratorOpen}
+        onClose={() => setIsNPCGeneratorOpen(false)}
+        onGenerate={onAddCharacter}
         campaignId={campaignId}
       />
     </div>

@@ -1,4 +1,4 @@
-import type { Campaign, ViewType, Character, Location, Item, Note, Relationship } from '../types';
+import type { Campaign, ViewType, Character, Location, Item, Note, Relationship, TimelineEvent, Quest } from '../types';
 import { GlobalSearch } from './GlobalSearch';
 import UserMenu from './UserMenu';
 
@@ -10,6 +10,8 @@ interface HeaderProps {
   items: Item[];
   notes: Note[];
   relationships: Relationship[];
+  timelineEvents: TimelineEvent[];
+  quests: Quest[];
   onSearchResultClick: (result: any) => void;
   onNavigateToView: (view: string) => void;
 }
@@ -22,6 +24,8 @@ const Header = ({
   items, 
   notes, 
   relationships, 
+  timelineEvents, 
+  quests, 
   onSearchResultClick, 
   onNavigateToView 
 }: HeaderProps) => (
@@ -46,6 +50,8 @@ const Header = ({
             items={items}
             notes={notes}
             relationships={relationships}
+            timelineEvents={timelineEvents}
+            quests={quests}
             onResultClick={onSearchResultClick}
             onNavigateToView={onNavigateToView}
           />
@@ -69,6 +75,8 @@ const Sidebar = ({ currentView, onViewChange }: SidebarProps) => {
     { id: 'items', label: 'Items', icon: '⚔️' },
     { id: 'relationships', label: 'Relationships', icon: '🔗' },
     { id: 'notes', label: 'Notes', icon: '📝' },
+    { id: 'timeline', label: 'Timeline', icon: '📅' },
+    { id: 'quests', label: 'Quests', icon: '🎯' },
   ] as const;
 
   return (
@@ -107,6 +115,8 @@ interface MainLayoutProps {
   items: Item[];
   notes: Note[];
   relationships: Relationship[];
+  timelineEvents: TimelineEvent[];
+  quests: Quest[];
   onSearchResultClick: (result: any) => void;
   onNavigateToView: (view: string) => void;
 }
@@ -122,6 +132,8 @@ export const MainLayout = ({
   items,
   notes,
   relationships,
+  timelineEvents,
+  quests,
   onSearchResultClick,
   onNavigateToView
 }: MainLayoutProps) => {
@@ -135,6 +147,8 @@ export const MainLayout = ({
         items={items}
         notes={notes}
         relationships={relationships}
+        timelineEvents={timelineEvents}
+        quests={quests}
         onSearchResultClick={onSearchResultClick}
         onNavigateToView={onNavigateToView}
       />

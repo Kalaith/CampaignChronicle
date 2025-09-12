@@ -8,6 +8,8 @@ import LocationsPage from './LocationsPage';
 import ItemsPage from './ItemsPage';
 import NotesPage from './NotesPage';
 import RelationshipsPage from './RelationshipsPage';
+import TimelinePage from './TimelinePage';
+import QuestsPage from './QuestsPage';
 
 const CampaignLayoutPage: React.FC = () => {
   const { 
@@ -19,7 +21,9 @@ const CampaignLayoutPage: React.FC = () => {
     locations,
     items,
     notes,
-    relationships
+    relationships,
+    timelineEvents,
+    quests
   } = useApiCampaignStore();
   const navigate = useNavigate();
 
@@ -34,7 +38,7 @@ const CampaignLayoutPage: React.FC = () => {
   };
 
   const handleViewChange = (view: string) => {
-    const validViews = ['dashboard', 'characters', 'locations', 'items', 'relationships', 'notes'] as const;
+    const validViews = ['dashboard', 'characters', 'locations', 'items', 'relationships', 'notes', 'timeline', 'quests'] as const;
     type ValidView = typeof validViews[number];
     if (validViews.includes(view as ValidView)) {
       setCurrentView(view as ValidView);
@@ -57,6 +61,8 @@ const CampaignLayoutPage: React.FC = () => {
     items: items.filter(i => i.campaignId === currentCampaign.id),
     notes: notes.filter(n => n.campaignId === currentCampaign.id),
     relationships: relationships.filter(r => r.campaignId === currentCampaign.id),
+    timelineEvents: timelineEvents.filter(e => e.campaignId === currentCampaign.id),
+    quests: quests?.filter(q => q.campaignId === currentCampaign.id) || [],
   };
 
   return (
@@ -70,6 +76,8 @@ const CampaignLayoutPage: React.FC = () => {
       items={campaignData.items}
       notes={campaignData.notes}
       relationships={campaignData.relationships}
+      timelineEvents={campaignData.timelineEvents}
+      quests={campaignData.quests}
       onSearchResultClick={handleSearchResultClick}
       onNavigateToView={handleNavigateToView}
     >
@@ -81,6 +89,8 @@ const CampaignLayoutPage: React.FC = () => {
         <Route path="/items" element={<ItemsPage />} />
         <Route path="/notes" element={<NotesPage />} />
         <Route path="/relationships" element={<RelationshipsPage />} />
+        <Route path="/timeline" element={<TimelinePage />} />
+        <Route path="/quests" element={<QuestsPage />} />
       </Routes>
     </MainLayout>
   );

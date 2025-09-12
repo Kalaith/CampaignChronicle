@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Campaign, Character, Location, Item, Note, Relationship, TimelineEvent } from '../types';
+import type { Campaign, Character, Location, Item, Note, Relationship, TimelineEvent, Quest } from '../types';
 import { 
   campaignApi, 
   characterApi, 
@@ -22,9 +22,10 @@ interface CampaignState {
   notes: Note[];
   relationships: Relationship[];
   timelineEvents: TimelineEvent[];
+  quests: Quest[];
   
   // UI State
-  currentView: 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline';
+  currentView: 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline' | 'quests';
   
   // Loading States
   isLoading: boolean;
@@ -79,8 +80,14 @@ interface CampaignActions {
   updateTimelineEvent: (eventId: string, updates: Partial<TimelineEvent>) => Promise<void>;
   deleteTimelineEvent: (eventId: string) => Promise<void>;
 
+  // Quest Management
+  loadQuests: (campaignId: string) => Promise<void>;
+  addQuest: (quest: Omit<Quest, 'id' | 'createdAt' | 'lastModified'>) => Promise<void>;
+  updateQuest: (questId: string, updates: Partial<Quest>) => Promise<void>;
+  deleteQuest: (questId: string) => Promise<void>;
+
   // View Management
-  setCurrentView: (view: 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline') => void;
+  setCurrentView: (view: 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline' | 'quests') => void;
 
   // Data Loading
   loadCampaignData: (campaignId: string) => Promise<void>;
@@ -182,6 +189,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
       notes: [],
       relationships: [],
       timelineEvents: [],
+      quests: [],
       currentView: 'dashboard',
       isLoading: false,
       error: null,
@@ -236,6 +244,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
             notes: [],
             relationships: [],
             timelineEvents: [],
+            quests: [],
             isLoading: false 
           });
         }
@@ -272,6 +281,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
             notes: state.currentCampaign?.id === campaignId ? [] : state.notes,
             relationships: state.currentCampaign?.id === campaignId ? [] : state.relationships,
             timelineEvents: state.currentCampaign?.id === campaignId ? [] : state.timelineEvents,
+            quests: state.currentCampaign?.id === campaignId ? [] : state.quests,
             isLoading: false,
           }));
         } catch (error) {
@@ -289,6 +299,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
             get().loadNotes(campaignId),
             get().loadRelationships(campaignId),
             get().loadTimelineEvents(campaignId),
+            get().loadQuests(campaignId),
           ]);
           set({ isLoading: false });
         } catch (error) {
@@ -646,6 +657,85 @@ export const useApiCampaignStore = create<CampaignStore>()(
         }
       },
 
+      // Quest Actions (local storage for now)
+      loadQuests: async (campaignId) => {
+        try {
+          // For now, use local storage until backend quest API is implemented
+          const storedQuests = localStorage.getItem(`quests_${campaignId}`);
+          const quests = storedQuests ? JSON.parse(storedQuests) : [];
+          set({ quests });
+        } catch (error) {
+          console.error('Failed to load quests:', error);
+          set({ quests: [] });
+        }
+      },
+
+      addQuest: async (questData) => {
+        const { currentCampaign, quests } = get();
+        if (!currentCampaign) throw new Error('No campaign selected');
+
+        set({ isLoading: true, error: null });
+        try {
+          const newQuest = {
+            ...questData,
+            id: crypto.randomUUID(),
+            createdAt: new Date().toISOString(),
+            lastModified: new Date().toISOString(),
+          };
+          
+          const updatedQuests = [...quests, newQuest];
+          localStorage.setItem(`quests_${currentCampaign.id}`, JSON.stringify(updatedQuests));
+          
+          set({
+            quests: updatedQuests,
+            isLoading: false,
+          });
+        } catch (error) {
+          handleApiError(error, set);
+        }
+      },
+
+      updateQuest: async (questId, updates) => {
+        const { currentCampaign, quests } = get();
+        if (!currentCampaign) throw new Error('No campaign selected');
+
+        set({ isLoading: true, error: null });
+        try {
+          const updatedQuests = quests.map(quest => 
+            quest.id === questId 
+              ? { ...quest, ...updates, lastModified: new Date().toISOString() }
+              : quest
+          );
+          
+          localStorage.setItem(`quests_${currentCampaign.id}`, JSON.stringify(updatedQuests));
+          
+          set({
+            quests: updatedQuests,
+            isLoading: false,
+          });
+        } catch (error) {
+          handleApiError(error, set);
+        }
+      },
+
+      deleteQuest: async (questId) => {
+        const { currentCampaign, quests } = get();
+        if (!currentCampaign) throw new Error('No campaign selected');
+
+        set({ isLoading: true, error: null });
+        try {
+          const updatedQuests = quests.filter(quest => quest.id !== questId);
+          localStorage.setItem(`quests_${currentCampaign.id}`, JSON.stringify(updatedQuests));
+          
+          set({
+            quests: updatedQuests,
+            isLoading: false,
+          });
+        } catch (error) {
+          handleApiError(error, set);
+        }
+      },
+
       // Search
       search: async (query, types) => {
         const { currentCampaign } = get();
@@ -693,6 +783,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
           notes: [],
           relationships: [],
           timelineEvents: [],
+          quests: [],
           currentView: 'dashboard',
           isLoading: false,
           error: null,

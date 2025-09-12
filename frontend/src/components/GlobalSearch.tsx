@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import type { Character, Location, Item, Note, Relationship } from '../types';
+import type { Character, Location, Item, Note, Relationship, TimelineEvent, Quest } from '../types';
 
 interface SearchResult {
   id: string;
-  type: 'character' | 'location' | 'item' | 'note' | 'relationship';
+  type: 'character' | 'location' | 'item' | 'note' | 'relationship' | 'timeline' | 'quest';
   title: string;
   subtitle?: string;
   content: string;
-  entity: Character | Location | Item | Note | Relationship;
+  entity: Character | Location | Item | Note | Relationship | TimelineEvent | Quest;
 }
 
 interface GlobalSearchProps {
@@ -16,6 +16,8 @@ interface GlobalSearchProps {
   items: Item[];
   notes: Note[];
   relationships: Relationship[];
+  timelineEvents: TimelineEvent[];
+  quests: Quest[];
   onResultClick: (result: SearchResult) => void;
   onNavigateToView: (view: string) => void;
 }
@@ -26,6 +28,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
   items,
   notes,
   relationships,
+  timelineEvents,
+  quests,
   onResultClick,
   onNavigateToView,
 }) => {
@@ -160,9 +164,52 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
       }
     });
 
+    // Search timeline events
+    timelineEvents.forEach(event => {
+      if (
+        event.title.toLowerCase().includes(searchTerm) ||
+        event.description?.toLowerCase().includes(searchTerm) ||
+        event.tags.some(tag => tag.toLowerCase().includes(searchTerm)) ||
+        event.date.toLowerCase().includes(searchTerm)
+      ) {
+        searchResults.push({
+          id: event.id,
+          type: 'timeline',
+          title: event.title,
+          subtitle: `${event.type} • ${event.date}${event.sessionNumber ? ` • Session ${event.sessionNumber}` : ''}`,
+          content: event.description || 'No description',
+          entity: event,
+        });
+      }
+    });
+
+    // Search quests
+    quests.forEach(quest => {
+      const objectivesText = quest.objectives.map(obj => obj.description).join(' ');
+      if (
+        quest.title.toLowerCase().includes(searchTerm) ||
+        quest.description.toLowerCase().includes(searchTerm) ||
+        quest.tags.some(tag => tag.toLowerCase().includes(searchTerm)) ||
+        objectivesText.toLowerCase().includes(searchTerm) ||
+        quest.rewards?.toLowerCase().includes(searchTerm)
+      ) {
+        const completedObjectives = quest.objectives.filter(obj => obj.completed).length;
+        const progressText = `${completedObjectives}/${quest.objectives.length} objectives`;
+        
+        searchResults.push({
+          id: quest.id,
+          type: 'quest',
+          title: quest.title,
+          subtitle: `${quest.status} • ${quest.priority} priority • ${progressText}`,
+          content: quest.description,
+          entity: quest,
+        });
+      }
+    });
+
     setResults(searchResults.slice(0, 20)); // Limit to 20 results
     setSelectedIndex(0);
-  }, [query, characters, locations, items, notes, relationships]);
+  }, [query, characters, locations, items, notes, relationships, timelineEvents, quests]);
 
   // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -197,6 +244,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
       item: 'items',
       note: 'notes',
       relationship: 'relationships',
+      timeline: 'timeline',
+      quest: 'quests',
     };
     onNavigateToView(viewMap[result.type]);
     setIsOpen(false);
@@ -210,6 +259,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
       case 'item': return '⚔️';
       case 'note': return '📝';
       case 'relationship': return '🔗';
+      case 'timeline': return '📅';
+      case 'quest': return '🎯';
       default: return '📄';
     }
   };

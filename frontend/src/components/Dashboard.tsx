@@ -2,6 +2,8 @@ import { useState } from 'react';
 import type { Character, Location, Item, Note } from '../types';
 import { DataManagement } from './DataManagement';
 import { DashboardCharts } from './DashboardCharts';
+import { InitiativeTracker } from './InitiativeTracker';
+import { WeatherCalendar } from './WeatherCalendar';
 
 interface DashboardProps {
   characters: Character[];
@@ -13,6 +15,8 @@ interface DashboardProps {
 
 export const Dashboard = ({ characters, locations, items, notes, onNavigateToView }: DashboardProps) => {
   const [isDataManagementOpen, setIsDataManagementOpen] = useState(false);
+  const [isInitiativeTrackerOpen, setIsInitiativeTrackerOpen] = useState(false);
+  const [isWeatherCalendarOpen, setIsWeatherCalendarOpen] = useState(false);
   const stats = [
     { label: 'Characters', count: characters.length, icon: '👥' },
     { label: 'Locations', count: locations.length, icon: '🏰' },
@@ -33,12 +37,26 @@ export const Dashboard = ({ characters, locations, items, notes, onNavigateToVie
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Campaign Dashboard</h2>
-        <button
-          onClick={() => setIsDataManagementOpen(true)}
-          className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors text-sm"
-        >
-          💾 Data Management
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setIsWeatherCalendarOpen(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+          >
+            🌤️ Weather & Calendar
+          </button>
+          <button
+            onClick={() => setIsInitiativeTrackerOpen(true)}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+          >
+            ⚔️ Initiative Tracker
+          </button>
+          <button
+            onClick={() => setIsDataManagementOpen(true)}
+            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors text-sm"
+          >
+            💾 Data Management
+          </button>
+        </div>
       </div>
 
       {/* Quick Stats */}
@@ -154,6 +172,19 @@ export const Dashboard = ({ characters, locations, items, notes, onNavigateToVie
       <DataManagement
         isOpen={isDataManagementOpen}
         onClose={() => setIsDataManagementOpen(false)}
+      />
+
+      {/* Initiative Tracker */}
+      <InitiativeTracker
+        isOpen={isInitiativeTrackerOpen}
+        onClose={() => setIsInitiativeTrackerOpen(false)}
+        characters={characters}
+      />
+
+      {/* Weather & Calendar */}
+      <WeatherCalendar
+        isOpen={isWeatherCalendarOpen}
+        onClose={() => setIsWeatherCalendarOpen(false)}
       />
     </div>
   );

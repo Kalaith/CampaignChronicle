@@ -76,4 +76,29 @@ export interface TimelineEvent {
   lastModified: string;
 }
 
-export type ViewType = 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline';
+export interface Quest {
+  id: string;
+  campaignId: string;
+  title: string;
+  description: string;
+  status: 'active' | 'completed' | 'failed' | 'on-hold';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  questGiver?: string; // Character ID
+  rewards?: string;
+  objectives: QuestObjective[];
+  relatedCharacters?: string[]; // Character IDs
+  relatedLocations?: string[]; // Location IDs
+  tags: string[];
+  createdAt: string;
+  lastModified: string;
+  completedAt?: string;
+}
+
+export interface QuestObjective {
+  id: string;
+  description: string;
+  completed: boolean;
+  completedAt?: string;
+}
+
+export type ViewType = 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline' | 'quests';
