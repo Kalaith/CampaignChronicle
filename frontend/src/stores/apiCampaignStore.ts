@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Campaign, Character, Location, Item, Note, Relationship, TimelineEvent, Quest } from '../types';
+import type { Campaign, Character, Location, Item, Note, Relationship, TimelineEvent, Quest, CampaignMap } from '../types';
 import { 
   campaignApi, 
   characterApi, 
@@ -9,6 +9,8 @@ import {
   noteApi, 
   relationshipApi, 
   timelineApi,
+  questApi,
+  mapApi,
   ApiError 
 } from '../services/api';
 
@@ -23,9 +25,10 @@ interface CampaignState {
   relationships: Relationship[];
   timelineEvents: TimelineEvent[];
   quests: Quest[];
+  maps: CampaignMap[];
   
   // UI State
-  currentView: 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline' | 'quests';
+  currentView: 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline' | 'quests' | 'maps';
   
   // Loading States
   isLoading: boolean;
@@ -86,8 +89,14 @@ interface CampaignActions {
   updateQuest: (questId: string, updates: Partial<Quest>) => Promise<void>;
   deleteQuest: (questId: string) => Promise<void>;
 
+  // Map Management
+  loadMaps: (campaignId: string) => Promise<void>;
+  addMap: (map: Omit<CampaignMap, 'id' | 'createdAt' | 'lastModified'>) => Promise<void>;
+  updateMap: (mapId: string, updates: Partial<CampaignMap>) => Promise<void>;
+  deleteMap: (mapId: string) => Promise<void>;
+
   // View Management
-  setCurrentView: (view: 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline' | 'quests') => void;
+  setCurrentView: (view: 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline' | 'quests' | 'maps') => void;
 
   // Data Loading
   loadCampaignData: (campaignId: string) => Promise<void>;
@@ -190,6 +199,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
       relationships: [],
       timelineEvents: [],
       quests: [],
+      maps: [],
       currentView: 'dashboard',
       isLoading: false,
       error: null,
@@ -245,6 +255,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
             relationships: [],
             timelineEvents: [],
             quests: [],
+            maps: [],
             isLoading: false 
           });
         }
@@ -282,6 +293,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
             relationships: state.currentCampaign?.id === campaignId ? [] : state.relationships,
             timelineEvents: state.currentCampaign?.id === campaignId ? [] : state.timelineEvents,
             quests: state.currentCampaign?.id === campaignId ? [] : state.quests,
+            maps: state.currentCampaign?.id === campaignId ? [] : state.maps,
             isLoading: false,
           }));
         } catch (error) {
@@ -300,6 +312,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
             get().loadRelationships(campaignId),
             get().loadTimelineEvents(campaignId),
             get().loadQuests(campaignId),
+            get().loadMaps(campaignId),
           ]);
           set({ isLoading: false });
         } catch (error) {
@@ -736,6 +749,73 @@ export const useApiCampaignStore = create<CampaignStore>()(
         }
       },
 
+      // Map Actions
+      loadMaps: async (campaignId) => {
+        try {
+          const result = await mapApi.list(campaignId);
+          set({ maps: result.data || [] });
+        } catch (error) {
+          console.error('Failed to load maps:', error);
+          set({ maps: [] });
+        }
+      },
+
+      addMap: async (mapData) => {
+        const { currentCampaign, maps } = get();
+        if (!currentCampaign) throw new Error('No campaign selected');
+
+        set({ isLoading: true, error: null });
+        try {
+          // mapData should include the imageFile for upload
+          const newMap = await mapApi.create(currentCampaign.id, mapData);
+          
+          set({
+            maps: [...maps, newMap],
+            isLoading: false,
+          });
+        } catch (error) {
+          handleApiError(error, set);
+        }
+      },
+
+      updateMap: async (mapId, updates) => {
+        const { maps } = get();
+
+        set({ isLoading: true, error: null });
+        try {
+          const updatedMap = await mapApi.update(mapId, updates);
+          
+          const updatedMaps = maps.map(map => 
+            map.id === mapId ? updatedMap : map
+          );
+          
+          set({
+            maps: updatedMaps,
+            isLoading: false,
+          });
+        } catch (error) {
+          handleApiError(error, set);
+        }
+      },
+
+      deleteMap: async (mapId) => {
+        const { maps } = get();
+
+        set({ isLoading: true, error: null });
+        try {
+          await mapApi.delete(mapId);
+          
+          const updatedMaps = maps.filter(map => map.id !== mapId);
+          
+          set({
+            maps: updatedMaps,
+            isLoading: false,
+          });
+        } catch (error) {
+          handleApiError(error, set);
+        }
+      },
+
       // Search
       search: async (query, types) => {
         const { currentCampaign } = get();
@@ -784,6 +864,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
           relationships: [],
           timelineEvents: [],
           quests: [],
+          maps: [],
           currentView: 'dashboard',
           isLoading: false,
           error: null,

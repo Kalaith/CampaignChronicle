@@ -1,4 +1,4 @@
-import type { Campaign, ViewType, Character, Location, Item, Note, Relationship, TimelineEvent, Quest } from '../types';
+import type { Campaign, ViewType, Character, Location, Item, Note, Relationship, TimelineEvent, Quest, CampaignMap } from '../types';
 import { GlobalSearch } from './GlobalSearch';
 import UserMenu from './UserMenu';
 
@@ -12,6 +12,7 @@ interface HeaderProps {
   relationships: Relationship[];
   timelineEvents: TimelineEvent[];
   quests: Quest[];
+  maps: CampaignMap[];
   onSearchResultClick: (result: any) => void;
   onNavigateToView: (view: string) => void;
 }
@@ -26,6 +27,7 @@ const Header = ({
   relationships, 
   timelineEvents, 
   quests, 
+  maps, 
   onSearchResultClick, 
   onNavigateToView 
 }: HeaderProps) => (
@@ -52,6 +54,7 @@ const Header = ({
             relationships={relationships}
             timelineEvents={timelineEvents}
             quests={quests}
+            maps={maps}
             onResultClick={onSearchResultClick}
             onNavigateToView={onNavigateToView}
           />
@@ -77,6 +80,7 @@ const Sidebar = ({ currentView, onViewChange }: SidebarProps) => {
     { id: 'notes', label: 'Notes', icon: '📝' },
     { id: 'timeline', label: 'Timeline', icon: '📅' },
     { id: 'quests', label: 'Quests', icon: '🎯' },
+    { id: 'maps', label: 'Maps', icon: '🗺️' },
   ] as const;
 
   return (
@@ -117,6 +121,7 @@ interface MainLayoutProps {
   relationships: Relationship[];
   timelineEvents: TimelineEvent[];
   quests: Quest[];
+  maps: CampaignMap[];
   onSearchResultClick: (result: any) => void;
   onNavigateToView: (view: string) => void;
 }
@@ -134,6 +139,7 @@ export const MainLayout = ({
   relationships,
   timelineEvents,
   quests,
+  maps,
   onSearchResultClick,
   onNavigateToView
 }: MainLayoutProps) => {
@@ -149,6 +155,7 @@ export const MainLayout = ({
         relationships={relationships}
         timelineEvents={timelineEvents}
         quests={quests}
+        maps={maps}
         onSearchResultClick={onSearchResultClick}
         onNavigateToView={onNavigateToView}
       />

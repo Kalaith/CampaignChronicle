@@ -74,6 +74,22 @@ class Campaign extends BaseModel
     }
 
     /**
+     * Get all maps for this campaign.
+     */
+    public function maps()
+    {
+        return $this->hasMany(CampaignMap::class);
+    }
+
+    /**
+     * Get all quests for this campaign.
+     */
+    public function quests()
+    {
+        return $this->hasMany(Quest::class);
+    }
+
+    /**
      * Get campaign statistics.
      */
     public function getStatsAttribute()
@@ -85,6 +101,8 @@ class Campaign extends BaseModel
             'notes' => $this->notes()->count(),
             'relationships' => $this->relationships()->count(),
             'timeline_events' => $this->timelineEvents()->count(),
+            'maps' => $this->maps()->count(),
+            'quests' => $this->quests()->count(),
         ];
     }
 
@@ -152,7 +170,7 @@ class Campaign extends BaseModel
     {
         $results = collect();
 
-        $searchTypes = $types ?? ['characters', 'locations', 'items', 'notes', 'timeline_events'];
+        $searchTypes = $types ?? ['characters', 'locations', 'items', 'notes', 'timeline_events', 'maps', 'quests'];
 
         foreach ($searchTypes as $type) {
             switch ($type) {
@@ -175,6 +193,14 @@ class Campaign extends BaseModel
                 case 'timeline_events':
                     $entities = $this->timelineEvents()->search($term)->get()
                         ->map(fn($item) => ['type' => 'timeline_event', 'data' => $item]);
+                    break;
+                case 'maps':
+                    $entities = $this->maps()->search($term)->get()
+                        ->map(fn($item) => ['type' => 'map', 'data' => $item]);
+                    break;
+                case 'quests':
+                    $entities = $this->quests()->search($term)->get()
+                        ->map(fn($item) => ['type' => 'quest', 'data' => $item]);
                     break;
                 default:
                     $entities = collect();
@@ -199,6 +225,8 @@ class Campaign extends BaseModel
             'notes' => $this->notes()->get(),
             'relationships' => $this->relationships()->get(),
             'timeline_events' => $this->timelineEvents()->get(),
+            'maps' => $this->maps()->get(),
+            'quests' => $this->quests()->get(),
             'exported_at' => now()->toISOString(),
             'version' => '1.0.0',
         ];

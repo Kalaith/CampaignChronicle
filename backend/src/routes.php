@@ -9,6 +9,11 @@ use App\Controllers\ItemController;
 use App\Controllers\NoteController;
 use App\Controllers\RelationshipController;
 use App\Controllers\TimelineEventController;
+use App\Controllers\MapController;
+use App\Controllers\QuestController;
+use App\Controllers\NPCController;
+use App\Controllers\WeatherController;
+use App\Controllers\InitiativeController;
 use App\Controllers\Auth0Controller;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -144,6 +149,60 @@ return function (App $app) {
                     $timeline->get('/characters/{character_id}/involvement', [TimelineEventController::class, 'characterInvolvement']);
                     $timeline->get('/locations/{location_id}/history', [TimelineEventController::class, 'locationHistory']);
                 });
+
+                // Map routes within campaigns
+                $campaigns->group('/{campaign_id}/maps', function (RouteCollectorProxy $maps) {
+                    $maps->get('', [MapController::class, 'index']);
+                    $maps->post('', [MapController::class, 'create']);
+                });
+
+                // Quest routes within campaigns
+                $campaigns->group('/{campaign_id}/quests', function (RouteCollectorProxy $quests) {
+                    $quests->get('', [QuestController::class, 'index']);
+                    $quests->post('', [QuestController::class, 'create']);
+                    $quests->get('/statistics', [QuestController::class, 'statistics']);
+                });
+
+                // NPC Generator routes within campaigns
+                $campaigns->group('/{campaign_id}/npcs', function (RouteCollectorProxy $npcs) {
+                    $npcs->post('/generate', [NPCController::class, 'generate']);
+                    $npcs->post('/generate/batch', [NPCController::class, 'generateBatch']);
+                    $npcs->get('/races', [NPCController::class, 'getRaces']);
+                    $npcs->get('/races/{race}', [NPCController::class, 'getRaceTemplate']);
+                });
+
+                // Weather & Calendar routes within campaigns
+                $campaigns->group('/{campaign_id}/weather', function (RouteCollectorProxy $weather) {
+                    $weather->get('', [WeatherController::class, 'index']);
+                    $weather->post('/generate', [WeatherController::class, 'generateWeather']);
+                    $weather->post('/advance-day', [WeatherController::class, 'advanceDay']);
+                    $weather->post('/set-date', [WeatherController::class, 'setDate']);
+                    $weather->post('/events', [WeatherController::class, 'addEvent']);
+                    $weather->put('/events/{event_id}', [WeatherController::class, 'updateEvent']);
+                    $weather->delete('/events/{event_id}', [WeatherController::class, 'deleteEvent']);
+                    $weather->get('/events/upcoming', [WeatherController::class, 'getUpcomingEvents']);
+                    $weather->get('/statistics', [WeatherController::class, 'getWeatherStatistics']);
+                });
+
+                // Initiative Tracker routes within campaigns
+                $campaigns->group('/{campaign_id}/combat', function (RouteCollectorProxy $combat) {
+                    $combat->get('', [InitiativeController::class, 'index']);
+                    $combat->post('', [InitiativeController::class, 'create']);
+                    $combat->get('/{encounter_id}', [InitiativeController::class, 'show']);
+                    $combat->put('/{encounter_id}', [InitiativeController::class, 'update']);
+                    $combat->delete('/{encounter_id}', [InitiativeController::class, 'delete']);
+                    $combat->post('/{encounter_id}/start', [InitiativeController::class, 'start']);
+                    $combat->post('/{encounter_id}/end', [InitiativeController::class, 'end']);
+                    $combat->post('/{encounter_id}/next-turn', [InitiativeController::class, 'nextTurn']);
+                    $combat->post('/{encounter_id}/combatants', [InitiativeController::class, 'addCombatant']);
+                    $combat->put('/{encounter_id}/combatants/{combatant_id}', [InitiativeController::class, 'updateCombatant']);
+                    $combat->delete('/{encounter_id}/combatants/{combatant_id}', [InitiativeController::class, 'removeCombatant']);
+                    $combat->post('/{encounter_id}/combatants/{combatant_id}/damage', [InitiativeController::class, 'applyDamage']);
+                    $combat->post('/{encounter_id}/combatants/{combatant_id}/heal', [InitiativeController::class, 'applyHealing']);
+                    $combat->post('/{encounter_id}/combatants/{combatant_id}/status-effects', [InitiativeController::class, 'addStatusEffect']);
+                    $combat->delete('/{encounter_id}/combatants/{combatant_id}/status-effects/{effect_id}', [InitiativeController::class, 'removeStatusEffect']);
+                    $combat->get('/{encounter_id}/summary', [InitiativeController::class, 'getSummary']);
+                });
             });
 
             // Individual entity routes (accessed by ID across all campaigns)
@@ -188,6 +247,31 @@ return function (App $app) {
                 $timeline->delete('/{id}', [TimelineEventController::class, 'delete']);
                 $timeline->post('/{id}/entities', [TimelineEventController::class, 'addRelatedEntity']);
             });
+
+            $protected->group('/maps', function (RouteCollectorProxy $maps) {
+                $maps->get('/{id}', [MapController::class, 'show']);
+                $maps->put('/{id}', [MapController::class, 'update']);
+                $maps->delete('/{id}', [MapController::class, 'delete']);
+                $maps->post('/{id}/pins', [MapController::class, 'addPin']);
+                $maps->put('/{id}/pins/{pin_id}', [MapController::class, 'updatePin']);
+                $maps->delete('/{id}/pins/{pin_id}', [MapController::class, 'deletePin']);
+                $maps->post('/{id}/routes', [MapController::class, 'addRoute']);
+                $maps->put('/{id}/routes/{route_id}', [MapController::class, 'updateRoute']);
+                $maps->delete('/{id}/routes/{route_id}', [MapController::class, 'deleteRoute']);
+            });
+
+            $protected->group('/quests', function (RouteCollectorProxy $quests) {
+                $quests->get('/{id}', [QuestController::class, 'show']);
+                $quests->put('/{id}', [QuestController::class, 'update']);
+                $quests->delete('/{id}', [QuestController::class, 'delete']);
+                $quests->post('/{id}/complete', [QuestController::class, 'complete']);
+                $quests->post('/{id}/objectives', [QuestController::class, 'addObjective']);
+                $quests->put('/{id}/objectives/{objective_id}', [QuestController::class, 'updateObjective']);
+                $quests->delete('/{id}/objectives/{objective_id}', [QuestController::class, 'deleteObjective']);
+            });
+
+            // Weather info endpoint
+            $protected->get('/weather/info', [WeatherController::class, 'getWeatherInfo']);
 
             // Import endpoint (creates new campaign)
             $protected->post('/import', [CampaignController::class, 'import']);

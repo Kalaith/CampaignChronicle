@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import type { Character, Location, Item, Note, Relationship, TimelineEvent, Quest } from '../types';
+import type { Character, Location, Item, Note, Relationship, TimelineEvent, Quest, CampaignMap } from '../types';
 
 interface SearchResult {
   id: string;
-  type: 'character' | 'location' | 'item' | 'note' | 'relationship' | 'timeline' | 'quest';
+  type: 'character' | 'location' | 'item' | 'note' | 'relationship' | 'timeline' | 'quest' | 'map';
   title: string;
   subtitle?: string;
   content: string;
-  entity: Character | Location | Item | Note | Relationship | TimelineEvent | Quest;
+  entity: Character | Location | Item | Note | Relationship | TimelineEvent | Quest | CampaignMap;
 }
 
 interface GlobalSearchProps {
@@ -18,6 +18,7 @@ interface GlobalSearchProps {
   relationships: Relationship[];
   timelineEvents: TimelineEvent[];
   quests: Quest[];
+  maps: CampaignMap[];
   onResultClick: (result: SearchResult) => void;
   onNavigateToView: (view: string) => void;
 }
@@ -30,6 +31,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
   relationships,
   timelineEvents,
   quests,
+  maps,
   onResultClick,
   onNavigateToView,
 }) => {
@@ -207,9 +209,30 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
       }
     });
 
+    // Search maps
+    maps.forEach(map => {
+      const pinsText = map.pins.map(pin => pin.name + ' ' + pin.description).join(' ');
+      const routesText = map.routes.map(route => route.name + ' ' + route.description).join(' ');
+      if (
+        map.name.toLowerCase().includes(searchTerm) ||
+        (map.description && map.description.toLowerCase().includes(searchTerm)) ||
+        pinsText.toLowerCase().includes(searchTerm) ||
+        routesText.toLowerCase().includes(searchTerm)
+      ) {
+        searchResults.push({
+          id: map.id,
+          type: 'map',
+          title: map.name,
+          subtitle: `${map.pins.length} pins • ${map.routes.length} routes • ${map.width}×${map.height}px`,
+          content: map.description || 'Campaign map',
+          entity: map,
+        });
+      }
+    });
+
     setResults(searchResults.slice(0, 20)); // Limit to 20 results
     setSelectedIndex(0);
-  }, [query, characters, locations, items, notes, relationships, timelineEvents, quests]);
+  }, [query, characters, locations, items, notes, relationships, timelineEvents, quests, maps]);
 
   // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -246,6 +269,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
       relationship: 'relationships',
       timeline: 'timeline',
       quest: 'quests',
+      map: 'maps',
     };
     onNavigateToView(viewMap[result.type]);
     setIsOpen(false);
@@ -261,6 +285,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
       case 'relationship': return '🔗';
       case 'timeline': return '📅';
       case 'quest': return '🎯';
+      case 'map': return '🗺️';
       default: return '📄';
     }
   };

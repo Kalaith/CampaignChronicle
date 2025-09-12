@@ -406,4 +406,143 @@ export const timelineApi = {
   },
 };
 
+// Quest API
+export const questApi = {
+  // Get quests for campaign
+  async list(campaignId: string): Promise<PaginatedResponse<any>> {
+    return apiRequest<PaginatedResponse<any>>(`/campaigns/${campaignId}/quests`);
+  },
+
+  // Get quest by ID
+  async get(id: string): Promise<any> {
+    return apiRequest<any>(`/quests/${id}`);
+  },
+
+  // Create quest in campaign
+  async create(campaignId: string, quest: any): Promise<any> {
+    return apiRequest<any>(`/campaigns/${campaignId}/quests`, {
+      method: 'POST',
+      body: JSON.stringify(quest),
+    });
+  },
+
+  // Update quest
+  async update(id: string, updates: any): Promise<any> {
+    return apiRequest<any>(`/quests/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  // Delete quest
+  async delete(id: string): Promise<void> {
+    return apiRequest<void>(`/quests/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Map API
+export const mapApi = {
+  // Get maps for campaign
+  async list(campaignId: string): Promise<PaginatedResponse<any>> {
+    return apiRequest<PaginatedResponse<any>>(`/campaigns/${campaignId}/maps`);
+  },
+
+  // Get map by ID
+  async get(id: string): Promise<any> {
+    return apiRequest<any>(`/maps/${id}`);
+  },
+
+  // Create map in campaign with image upload
+  async create(campaignId: string, mapData: { name: string; description?: string; imageFile: File }): Promise<any> {
+    const authHeaders = await getAuthHeaders();
+    
+    const formData = new FormData();
+    formData.append('name', mapData.name);
+    if (mapData.description) {
+      formData.append('description', mapData.description);
+    }
+    formData.append('image', mapData.imageFile);
+
+    const response = await fetch(`${API_BASE_URL}/campaigns/${campaignId}/maps`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        ...authHeaders,
+      },
+      body: formData,
+    });
+
+    const result: ApiResponse<any> = await response.json();
+
+    if (!result.success) {
+      throw new ApiError(response.status, result.message);
+    }
+
+    return result.data;
+  },
+
+  // Update map
+  async update(id: string, updates: any): Promise<any> {
+    return apiRequest<any>(`/maps/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  // Delete map
+  async delete(id: string): Promise<void> {
+    return apiRequest<void>(`/maps/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Add pin to map
+  async addPin(id: string, pin: any): Promise<any> {
+    return apiRequest<any>(`/maps/${id}/pins`, {
+      method: 'POST',
+      body: JSON.stringify(pin),
+    });
+  },
+
+  // Update pin on map
+  async updatePin(mapId: string, pinId: string, updates: any): Promise<any> {
+    return apiRequest<any>(`/maps/${mapId}/pins/${pinId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  // Delete pin from map
+  async deletePin(mapId: string, pinId: string): Promise<void> {
+    return apiRequest<void>(`/maps/${mapId}/pins/${pinId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Add route to map
+  async addRoute(id: string, route: any): Promise<any> {
+    return apiRequest<any>(`/maps/${id}/routes`, {
+      method: 'POST',
+      body: JSON.stringify(route),
+    });
+  },
+
+  // Update route on map
+  async updateRoute(mapId: string, routeId: string, updates: any): Promise<any> {
+    return apiRequest<any>(`/maps/${mapId}/routes/${routeId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  // Delete route from map
+  async deleteRoute(mapId: string, routeId: string): Promise<void> {
+    return apiRequest<void>(`/maps/${mapId}/routes/${routeId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
 export { ApiError };

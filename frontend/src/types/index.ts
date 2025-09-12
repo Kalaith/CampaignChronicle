@@ -101,4 +101,45 @@ export interface QuestObjective {
   completedAt?: string;
 }
 
-export type ViewType = 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline' | 'quests';
+export interface CampaignMap {
+  id: string;
+  campaignId: string;
+  name: string;
+  description?: string;
+  imageUrl: string;
+  width: number;
+  height: number;
+  pins: MapPin[];
+  routes: MapRoute[];
+  createdAt: string;
+  lastModified: string;
+}
+
+export interface MapPin {
+  id: string;
+  x: number; // Percentage of map width
+  y: number; // Percentage of map height
+  type: 'location' | 'poi' | 'danger' | 'treasure' | 'settlement';
+  name: string;
+  description?: string;
+  locationId?: string; // Link to Location entity
+  icon: string;
+  color: string;
+}
+
+export interface MapRoute {
+  id: string;
+  name: string;
+  description?: string;
+  points: RoutePoint[];
+  color: string;
+  type: 'path' | 'road' | 'river' | 'border';
+  isVisible: boolean;
+}
+
+export interface RoutePoint {
+  x: number; // Percentage of map width
+  y: number; // Percentage of map height
+}
+
+export type ViewType = 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline' | 'quests' | 'maps';
