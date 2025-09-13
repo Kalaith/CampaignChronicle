@@ -30,11 +30,12 @@ import {
 } from 'lucide-react';
 import { playerAccessApi, characterApi, noteApi } from '@/services/api';
 import { useCampaignStore } from '@/stores/campaignStore';
+import { useDiceStore } from '@/stores/diceStore';
+import { DiceRoller } from './DiceRoller';
 
 interface MobileSession {
   characters: any[];
   quickNotes: string[];
-  diceHistory: { roll: string; result: number; timestamp: number }[];
   initiativeTracker: { name: string; initiative: number; hp?: number; maxHp?: number }[];
   soundscape: {
     currentTrack?: string;
@@ -58,7 +59,6 @@ export const MobileCompanionApp: React.FC<MobileCompanionAppProps> = ({
   const [mobileSession, setMobileSession] = useState<MobileSession>({
     characters: [],
     quickNotes: [],
-    diceHistory: [],
     initiativeTracker: [],
     soundscape: {
       volume: 50,
@@ -69,7 +69,6 @@ export const MobileCompanionApp: React.FC<MobileCompanionAppProps> = ({
   const [qrCode, setQrCode] = useState<string>('');
   const [mobileUrl, setMobileUrl] = useState<string>('');
   const [newNote, setNewNote] = useState('');
-  const [diceRoll, setDiceRoll] = useState('1d20');
   const [newInitiative, setNewInitiative] = useState({ name: '', initiative: 0 });
 
   useEffect(() => {
@@ -115,42 +114,6 @@ export const MobileCompanionApp: React.FC<MobileCompanionAppProps> = ({
     }));
   };
 
-  const rollDice = () => {
-    try {
-      // Simple dice parsing (1d20, 2d6, etc.)
-      const match = diceRoll.match(/^(\d+)d(\d+)(?:\+(\d+))?$/i);
-      if (!match) return;
-
-      const [, numDice, sides, modifier] = match;
-      const num = parseInt(numDice);
-      const die = parseInt(sides);
-      const mod = parseInt(modifier || '0');
-
-      let total = 0;
-      const rolls = [];
-      
-      for (let i = 0; i < num; i++) {
-        const roll = Math.floor(Math.random() * die) + 1;
-        rolls.push(roll);
-        total += roll;
-      }
-      
-      total += mod;
-      
-      const rollResult = {
-        roll: `${diceRoll} → [${rolls.join(', ')}]${mod ? ` + ${mod}` : ''}`,
-        result: total,
-        timestamp: Date.now(),
-      };
-
-      setMobileSession(prev => ({
-        ...prev,
-        diceHistory: [rollResult, ...prev.diceHistory.slice(0, 9)], // Keep last 10
-      }));
-    } catch (error) {
-      console.error('Invalid dice format');
-    }
-  };
 
   const addToInitiative = () => {
     if (newInitiative.name.trim()) {
@@ -347,31 +310,13 @@ export const MobileCompanionApp: React.FC<MobileCompanionAppProps> = ({
 
                     {/* Dice Roller Tab */}
                     <TabsContent value="dice" className="p-4 space-y-3">
-                      <h3 className="font-bold text-lg">Dice Roller</h3>
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="1d20"
-                          value={diceRoll}
-                          onChange={(e) => setDiceRoll(e.target.value)}
-                          className="text-sm"
+                      <div className="h-[480px] overflow-y-auto">
+                        <DiceRoller 
+                          compact={true}
+                          showHistory={true}
+                          context="Mobile Session"
+                          className="space-y-3"
                         />
-                        <Button onClick={rollDice}>
-                          <Dice6 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      <div className="space-y-2">
-                        <h4 className="font-medium">Recent Rolls</h4>
-                        {mobileSession.diceHistory.map((roll, index) => (
-                          <div key={index} className="bg-muted p-2 rounded text-xs">
-                            <div className="font-mono">{roll.roll}</div>
-                            <div className="flex justify-between items-center">
-                              <span className="font-bold text-lg">= {roll.result}</span>
-                              <span className="text-muted-foreground">
-                                {new Date(roll.timestamp).toLocaleTimeString()}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
                       </div>
                     </TabsContent>
 

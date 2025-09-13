@@ -142,4 +142,65 @@ export interface RoutePoint {
   y: number; // Percentage of map height
 }
 
-export type ViewType = 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline' | 'quests' | 'maps' | 'player-access' | 'resources' | 'mobile-companion';
+// Dice Rolling Types
+export interface DiceRoll {
+  id: string;
+  campaignId: string;
+  playerId?: string; // For player attribution
+  playerName?: string;
+  expression: string; // The dice expression (e.g., "2d6+3", "1d20")
+  result: number;
+  individualRolls: number[]; // The individual die results
+  modifier: number;
+  timestamp: string;
+  context?: string; // What this roll was for (e.g., "Attack Roll", "Saving Throw")
+  advantage?: boolean; // For D&D advantage rolls
+  disadvantage?: boolean; // For D&D disadvantage rolls
+  critical?: boolean; // Was this a critical hit/fail?
+  tags: string[];
+  isPrivate: boolean; // Whether this roll is visible to players
+}
+
+export interface DiceTemplate {
+  id: string;
+  campaignId: string;
+  name: string;
+  expression: string;
+  description?: string;
+  category: 'attack' | 'damage' | 'save' | 'skill' | 'custom';
+  tags: string[];
+  createdAt: string;
+}
+
+export interface DiceSet {
+  id: string;
+  campaignId: string;
+  name: string;
+  dice: DiceDefinition[];
+  description?: string;
+  isDefault: boolean;
+}
+
+export interface DiceDefinition {
+  sides: number;
+  quantity: number;
+  modifier?: number;
+  color?: string;
+  label?: string;
+}
+
+export interface DiceProbability {
+  value: number;
+  probability: number;
+  percentage: string;
+}
+
+export interface DiceStatistics {
+  min: number;
+  max: number;
+  average: number;
+  mostLikely: number;
+  distribution: DiceProbability[];
+}
+
+export type ViewType = 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline' | 'quests' | 'maps' | 'player-access' | 'resources' | 'mobile-companion' | 'dice-roller';

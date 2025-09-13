@@ -16,6 +16,7 @@ use App\Controllers\WeatherController;
 use App\Controllers\InitiativeController;
 use App\Controllers\PlayerAccessController;
 use App\Controllers\SharedResourceController;
+use App\Controllers\DiceController;
 use App\Controllers\Auth0Controller;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -220,6 +221,20 @@ return function (App $app) {
                 $campaigns->group('/{campaign_id}/resources', function (RouteCollectorProxy $resources) {
                     $resources->get('', [SharedResourceController::class, 'index']);
                     $resources->post('', [SharedResourceController::class, 'create']);
+                });
+
+                // Dice Rolling routes within campaigns
+                $campaigns->group('/{campaign_id}/dice', function (RouteCollectorProxy $dice) {
+                    $dice->get('/rolls', [DiceController::class, 'getRolls']);
+                    $dice->post('/rolls', [DiceController::class, 'createRoll']);
+                    $dice->delete('/rolls/{rollId}', [DiceController::class, 'deleteRoll']);
+                    $dice->delete('/rolls', [DiceController::class, 'clearRollHistory']);
+                    $dice->get('/templates', [DiceController::class, 'getTemplates']);
+                    $dice->post('/templates', [DiceController::class, 'createTemplate']);
+                    $dice->put('/templates/{templateId}', [DiceController::class, 'updateTemplate']);
+                    $dice->delete('/templates/{templateId}', [DiceController::class, 'deleteTemplate']);
+                    $dice->get('/statistics', [DiceController::class, 'getRollStatistics']);
+                    $dice->get('/recent', [DiceController::class, 'getRecentRolls']);
                 });
             });
 

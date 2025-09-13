@@ -11,6 +11,7 @@ import RelationshipsPage from './RelationshipsPage';
 import TimelinePage from './TimelinePage';
 import QuestsPage from './QuestsPage';
 import MapsPage from './MapsPage';
+import DiceRollerPage from './DiceRollerPage';
 
 const CampaignLayoutPage: React.FC = () => {
   const { 
@@ -40,7 +41,7 @@ const CampaignLayoutPage: React.FC = () => {
   };
 
   const handleViewChange = (view: string) => {
-    const validViews = ['dashboard', 'characters', 'locations', 'items', 'relationships', 'notes', 'timeline', 'quests', 'maps'] as const;
+    const validViews = ['dashboard', 'characters', 'locations', 'items', 'relationships', 'notes', 'timeline', 'quests', 'maps', 'player-access', 'resources', 'dice-roller', 'mobile-companion'] as const;
     type ValidView = typeof validViews[number];
     if (validViews.includes(view as ValidView)) {
       setCurrentView(view as ValidView);
@@ -96,6 +97,7 @@ const CampaignLayoutPage: React.FC = () => {
         <Route path="/timeline" element={<TimelinePage />} />
         <Route path="/quests" element={<QuestsPage />} />
         <Route path="/maps" element={<MapsPage />} />
+        <Route path="/dice-roller" element={<DiceRollerPage />} />
       </Routes>
     </MainLayout>
   );

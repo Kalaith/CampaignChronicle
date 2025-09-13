@@ -681,4 +681,127 @@ export const sharedResourceApi = {
   },
 };
 
+// Dice Rolling API
+export const diceApi = {
+  // Get roll history for campaign
+  async getRolls(campaignId: string, params?: { 
+    limit?: number; 
+    includePrivate?: boolean;
+    since?: string;
+    playerId?: string;
+    context?: string;
+  }): Promise<any[]> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, value.toString());
+      });
+    }
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    return apiRequest<any[]>(`/campaigns/${campaignId}/dice/rolls${query}`);
+  },
+
+  // Create a new roll
+  async createRoll(campaignId: string, rollData: {
+    expression: string;
+    result: number;
+    individual_rolls: number[];
+    modifier?: number;
+    context?: string;
+    advantage?: boolean;
+    disadvantage?: boolean;
+    critical?: boolean;
+    tags?: string[];
+    is_private?: boolean;
+    player_id?: string;
+    player_name?: string;
+  }): Promise<any> {
+    return apiRequest<any>(`/campaigns/${campaignId}/dice/rolls`, {
+      method: 'POST',
+      body: JSON.stringify(rollData),
+    });
+  },
+
+  // Delete a specific roll
+  async deleteRoll(campaignId: string, rollId: string): Promise<void> {
+    return apiRequest<void>(`/campaigns/${campaignId}/dice/rolls/${rollId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Clear roll history
+  async clearRollHistory(campaignId: string, playerId?: string): Promise<any> {
+    const body = playerId ? JSON.stringify({ player_id: playerId }) : undefined;
+    return apiRequest<any>(`/campaigns/${campaignId}/dice/rolls`, {
+      method: 'DELETE',
+      body,
+    });
+  },
+
+  // Get roll templates
+  async getTemplates(campaignId: string): Promise<any[]> {
+    return apiRequest<any[]>(`/campaigns/${campaignId}/dice/templates`);
+  },
+
+  // Create a new template
+  async createTemplate(campaignId: string, templateData: {
+    name: string;
+    expression: string;
+    description?: string;
+    category: 'attack' | 'damage' | 'save' | 'skill' | 'custom';
+    tags?: string[];
+  }): Promise<any> {
+    return apiRequest<any>(`/campaigns/${campaignId}/dice/templates`, {
+      method: 'POST',
+      body: JSON.stringify(templateData),
+    });
+  },
+
+  // Update a template
+  async updateTemplate(campaignId: string, templateId: string, updates: any): Promise<any> {
+    return apiRequest<any>(`/campaigns/${campaignId}/dice/templates/${templateId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  // Delete a template
+  async deleteTemplate(campaignId: string, templateId: string): Promise<void> {
+    return apiRequest<void>(`/campaigns/${campaignId}/dice/templates/${templateId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Get roll statistics
+  async getStatistics(campaignId: string, params?: {
+    player_id?: string;
+    days?: number;
+    context?: string;
+  }): Promise<any> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, value.toString());
+      });
+    }
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    return apiRequest<any>(`/campaigns/${campaignId}/dice/statistics${query}`);
+  },
+
+  // Get recent rolls (for real-time updates)
+  async getRecentRolls(campaignId: string, params?: {
+    since?: string;
+    limit?: number;
+  }): Promise<any[]> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, value.toString());
+      });
+    }
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    return apiRequest<any[]>(`/campaigns/${campaignId}/dice/recent${query}`);
+  },
+};
+
 export { ApiError };

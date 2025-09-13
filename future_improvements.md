@@ -26,4 +26,4 @@
 17. **Character Sheet Import**: Import character data from D&D Beyond, PCGen, and other tools
 18. **Campaign Export**: Export campaigns to PDF, World Anvil, or other campaign management tools
 19. ✅ **Mobile Companion App**: Mobile-optimized interface for quick reference and note-taking during sessions *(Complete: Frontend + Mobile Interface)*
-20. **Dice Rolling Integration**: Built-in dice roller with roll history and probability calculations
+20. ✅ **Dice Rolling Integration**: Built-in dice roller with roll history and probability calculations *(Complete: Frontend + Backend + API + Mobile Integration)*

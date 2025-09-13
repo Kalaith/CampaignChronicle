@@ -83,6 +83,7 @@ const Sidebar = ({ currentView, onViewChange }: SidebarProps) => {
     { id: 'maps', label: 'Maps', icon: '🗺️' },
     { id: 'player-access', label: 'Player Access', icon: '👥' },
     { id: 'resources', label: 'Resources', icon: '📁' },
+    { id: 'dice-roller', label: 'Dice Roller', icon: '🎲' },
     { id: 'mobile-companion', label: 'Mobile Companion', icon: '📱' },
   ] as const;
 
