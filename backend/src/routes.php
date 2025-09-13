@@ -14,6 +14,8 @@ use App\Controllers\QuestController;
 use App\Controllers\NPCController;
 use App\Controllers\WeatherController;
 use App\Controllers\InitiativeController;
+use App\Controllers\PlayerAccessController;
+use App\Controllers\SharedResourceController;
 use App\Controllers\Auth0Controller;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -203,6 +205,22 @@ return function (App $app) {
                     $combat->delete('/{encounter_id}/combatants/{combatant_id}/status-effects/{effect_id}', [InitiativeController::class, 'removeStatusEffect']);
                     $combat->get('/{encounter_id}/summary', [InitiativeController::class, 'getSummary']);
                 });
+
+                // Player Access routes within campaigns
+                $campaigns->group('/{campaign_id}/players', function (RouteCollectorProxy $players) {
+                    $players->get('', [PlayerAccessController::class, 'index']);
+                    $players->post('', [PlayerAccessController::class, 'create']);
+                    $players->get('/{access_id}', [PlayerAccessController::class, 'show']);
+                    $players->put('/{access_id}', [PlayerAccessController::class, 'update']);
+                    $players->delete('/{access_id}', [PlayerAccessController::class, 'delete']);
+                    $players->post('/{access_id}/regenerate-token', [PlayerAccessController::class, 'regenerateToken']);
+                });
+
+                // Shared Resource routes within campaigns
+                $campaigns->group('/{campaign_id}/resources', function (RouteCollectorProxy $resources) {
+                    $resources->get('', [SharedResourceController::class, 'index']);
+                    $resources->post('', [SharedResourceController::class, 'create']);
+                });
             });
 
             // Individual entity routes (accessed by ID across all campaigns)
@@ -270,13 +288,33 @@ return function (App $app) {
                 $quests->delete('/{id}/objectives/{objective_id}', [QuestController::class, 'deleteObjective']);
             });
 
+            $protected->group('/resources', function (RouteCollectorProxy $resources) {
+                $resources->get('/{id}', [SharedResourceController::class, 'show']);
+                $resources->put('/{id}', [SharedResourceController::class, 'update']);
+                $resources->delete('/{id}', [SharedResourceController::class, 'delete']);
+                $resources->get('/{id}/download', [SharedResourceController::class, 'download']);
+            });
+
             // Weather info endpoint
             $protected->get('/weather/info', [WeatherController::class, 'getWeatherInfo']);
+
+            // Player access permissions endpoint
+            $protected->get('/players/permissions', [PlayerAccessController::class, 'getPermissions']);
+
+            // Shared resources info endpoint
+            $protected->get('/resources/info', [SharedResourceController::class, 'getResourceInfo']);
 
             // Import endpoint (creates new campaign)
             $protected->post('/import', [CampaignController::class, 'import']);
             
         })->add(new \App\Middleware\Auth0Middleware());
+
+        // Public player portal routes (no authentication required)
+        $group->group('/player-portal', function (RouteCollectorProxy $portal) {
+            $portal->get('/{token}', [PlayerAccessController::class, 'portalAccess']);
+            $portal->get('/{token}/campaign', [PlayerAccessController::class, 'getCampaignData']);
+            $portal->get('/{token}/resources', [SharedResourceController::class, 'playerIndex']);
+        });
         
     })->add(new \App\Middleware\CorsMiddleware());
 

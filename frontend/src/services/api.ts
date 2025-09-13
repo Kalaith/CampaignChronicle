@@ -545,4 +545,140 @@ export const mapApi = {
   },
 };
 
+// Player Access API
+export const playerAccessApi = {
+  // Get player access grants for campaign
+  async list(campaignId: string, status?: string): Promise<any[]> {
+    const params = status ? `?status=${status}` : '';
+    return apiRequest<any[]>(`/campaigns/${campaignId}/players${params}`);
+  },
+
+  // Get player access by ID
+  async get(campaignId: string, accessId: string): Promise<any> {
+    return apiRequest<any>(`/campaigns/${campaignId}/players/${accessId}`);
+  },
+
+  // Invite player (create access grant)
+  async invite(campaignId: string, playerData: any): Promise<any> {
+    return apiRequest<any>(`/campaigns/${campaignId}/players`, {
+      method: 'POST',
+      body: JSON.stringify(playerData),
+    });
+  },
+
+  // Update player access
+  async update(campaignId: string, accessId: string, updates: any): Promise<any> {
+    return apiRequest<any>(`/campaigns/${campaignId}/players/${accessId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  // Revoke player access
+  async revoke(campaignId: string, accessId: string): Promise<void> {
+    return apiRequest<void>(`/campaigns/${campaignId}/players/${accessId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Regenerate access token
+  async regenerateToken(campaignId: string, accessId: string): Promise<{ access_token: string }> {
+    return apiRequest<{ access_token: string }>(`/campaigns/${campaignId}/players/${accessId}/regenerate-token`, {
+      method: 'POST',
+    });
+  },
+
+  // Get available permissions
+  async getPermissions(): Promise<any> {
+    return apiRequest<any>('/players/permissions');
+  },
+
+  // Player portal access (public)
+  async portalAccess(token: string): Promise<any> {
+    return apiRequest<any>(`/player-portal/${token}`);
+  },
+
+  // Get campaign data for player portal (public)
+  async getCampaignData(token: string): Promise<any> {
+    return apiRequest<any>(`/player-portal/${token}/campaign`);
+  },
+};
+
+// Shared Resource API
+export const sharedResourceApi = {
+  // Get shared resources for campaign
+  async list(campaignId: string, filters?: { type?: string; category?: string; access_level?: string; tag?: string }): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value);
+      });
+    }
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return apiRequest<any[]>(`/campaigns/${campaignId}/resources${query}`);
+  },
+
+  // Get resource by ID
+  async get(id: string): Promise<any> {
+    return apiRequest<any>(`/resources/${id}`);
+  },
+
+  // Upload resource
+  async upload(campaignId: string, formData: FormData): Promise<any> {
+    return apiRequest<any>(`/campaigns/${campaignId}/resources`, {
+      method: 'POST',
+      body: formData,
+      // Don't set Content-Type header - let browser set it for FormData
+      headers: {},
+    });
+  },
+
+  // Update resource
+  async update(id: string, updates: any): Promise<any> {
+    return apiRequest<any>(`/resources/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  // Delete resource
+  async delete(id: string): Promise<void> {
+    return apiRequest<void>(`/resources/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Download resource
+  async download(id: string): Promise<Blob> {
+    const response = await fetch(`${API_BASE_URL}/resources/${id}/download`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new ApiError('Download failed', response.status, await response.text());
+    }
+
+    return response.blob();
+  },
+
+  // Get resource info (types, categories, etc.)
+  async getResourceInfo(): Promise<any> {
+    return apiRequest<any>('/resources/info');
+  },
+
+  // Player portal resource access (public)
+  async playerList(token: string, filters?: { type?: string; category?: string }): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value);
+      });
+    }
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return apiRequest<any[]>(`/player-portal/${token}/resources${query}`);
+  },
+};
+
 export { ApiError };

@@ -142,4 +142,4 @@ export interface RoutePoint {
   y: number; // Percentage of map height
 }
 
-export type ViewType = 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline' | 'quests' | 'maps';
+export type ViewType = 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline' | 'quests' | 'maps' | 'player-access' | 'resources' | 'mobile-companion';

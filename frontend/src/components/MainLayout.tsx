@@ -81,6 +81,9 @@ const Sidebar = ({ currentView, onViewChange }: SidebarProps) => {
     { id: 'timeline', label: 'Timeline', icon: '📅' },
     { id: 'quests', label: 'Quests', icon: '🎯' },
     { id: 'maps', label: 'Maps', icon: '🗺️' },
+    { id: 'player-access', label: 'Player Access', icon: '👥' },
+    { id: 'resources', label: 'Resources', icon: '📁' },
+    { id: 'mobile-companion', label: 'Mobile Companion', icon: '📱' },
   ] as const;
 
   return (
