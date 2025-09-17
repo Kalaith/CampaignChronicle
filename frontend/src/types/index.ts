@@ -8,6 +8,17 @@ export interface Campaign {
   lastModified: string;
 }
 
+// Request types
+export interface CreateCampaignRequest {
+  name: string;
+  description?: string;
+}
+
+export interface UpdateCampaignRequest {
+  name?: string;
+  description?: string;
+}
+
 export interface Character {
   id: string;
   campaignId: string;
@@ -15,9 +26,43 @@ export interface Character {
   type: 'PC' | 'NPC' | 'Villain' | 'Ally';
   race?: string;
   class?: string;
+  level?: number;
+  hp?: number;
+  ac?: number;
+  status?: string;
   location?: string;
   description?: string;
   tags: string[];
+}
+
+export interface CreateCharacterRequest {
+  campaignId: string;
+  name: string;
+  type: 'PC' | 'NPC' | 'Villain' | 'Ally';
+  race?: string;
+  class?: string;
+  level?: number;
+  hp?: number;
+  ac?: number;
+  status?: string;
+  location?: string;
+  description?: string;
+  tags?: string[];
+}
+
+export interface UpdateCharacterRequest {
+  name?: string;
+  type?: 'PC' | 'NPC' | 'Villain' | 'Ally';
+  race?: string;
+  class?: string;
+  level?: number;
+  hp?: number;
+  ac?: number;
+  status?: string;
+  location?: string;
+  description?: string;
+  tags?: string[];
+}
 }
 
 export interface Location {

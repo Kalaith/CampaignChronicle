@@ -1,18 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Campaign, Character, Location, Item, Note, Relationship, TimelineEvent, Quest, CampaignMap } from '../types';
-import { 
-  campaignApi, 
-  characterApi, 
-  locationApi, 
-  itemApi, 
-  noteApi, 
-  relationshipApi, 
-  timelineApi,
-  questApi,
-  mapApi,
-  ApiError 
-} from '../services/api';
+import { campaignService, characterService } from '../services';
+import { AppError, errorHandler } from '../utils/errors';
+import { storeLogger } from '../utils/logger';
+import { APP_CONSTANTS } from '../constants/app';
 
 interface CampaignState {
   // Data
@@ -114,15 +106,11 @@ interface CampaignActions {
 
 type CampaignStore = CampaignState & CampaignActions;
 
-// Helper function to handle API errors
-const handleApiError = (error: unknown, set: (state: Partial<CampaignState>) => void) => {
-  if (error instanceof ApiError) {
-    set({ error: error.message, isLoading: false });
-  } else if (error instanceof Error) {
-    set({ error: error.message, isLoading: false });
-  } else {
-    set({ error: 'An unknown error occurred', isLoading: false });
-  }
+// Helper function to handle errors using new error handling system
+const handleStoreError = (error: unknown, context: string, set: (state: Partial<CampaignState>) => void) => {
+  const appError = errorHandler.normalize(error, context);
+  storeLogger.error(`Store error in ${context}`, appError);
+  set({ error: appError.userMessage, isLoading: false });
 };
 
 // Helper to transform backend data to frontend format
@@ -212,22 +200,23 @@ export const useApiCampaignStore = create<CampaignStore>()(
       loadCampaigns: async () => {
         set({ isLoading: true, error: null });
         try {
-          const response = await campaignApi.list();
-          const campaigns = response.data.map(transformCampaign);
+          storeLogger.debug('Loading campaigns');
+          const campaigns = await campaignService.getAllCampaigns();
           set({ campaigns, isLoading: false });
+          storeLogger.info(`Loaded ${campaigns.length} campaigns`);
         } catch (error) {
-          handleApiError(error, set);
+          handleStoreError(error, 'loadCampaigns', set);
         }
       },
 
       createCampaign: async (campaignData) => {
         set({ isLoading: true, error: null });
         try {
-          const backendCampaign = await campaignApi.create({
+          storeLogger.debug('Creating campaign', campaignData);
+          const campaign = await campaignService.createCampaign({
             name: campaignData.name,
-            description: campaignData.description,
+            description: campaignData.description || '',
           });
-          const campaign = transformCampaign(backendCampaign);
           
           set((state) => ({
             campaigns: [...state.campaigns, campaign],
@@ -235,9 +224,10 @@ export const useApiCampaignStore = create<CampaignStore>()(
             isLoading: false,
           }));
           
+          storeLogger.info(`Campaign created: ${campaign.name}`);
           return campaign;
         } catch (error) {
-          handleApiError(error, set);
+          handleStoreError(error, 'createCampaign', set);
           throw error;
         }
       },
@@ -264,8 +254,8 @@ export const useApiCampaignStore = create<CampaignStore>()(
       updateCampaign: async (campaignId, updates) => {
         set({ isLoading: true, error: null });
         try {
-          const backendCampaign = await campaignApi.update(campaignId, updates);
-          const updatedCampaign = transformCampaign(backendCampaign);
+          storeLogger.debug(`Updating campaign ${campaignId}`, updates);
+          const updatedCampaign = await campaignService.updateCampaign(campaignId, updates);
           
           set((state) => ({
             campaigns: state.campaigns.map(c => 
@@ -274,8 +264,10 @@ export const useApiCampaignStore = create<CampaignStore>()(
             currentCampaign: state.currentCampaign?.id === campaignId ? updatedCampaign : state.currentCampaign,
             isLoading: false,
           }));
+          
+          storeLogger.info(`Campaign updated: ${updatedCampaign.name}`);
         } catch (error) {
-          handleApiError(error, set);
+          handleStoreError(error, 'updateCampaign', set);
         }
       },
 
