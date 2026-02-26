@@ -3,7 +3,7 @@
 import { appConfig } from '../../config/appConfig';
 import { ApiError, errorHandler } from '../../utils/errors';
 import { apiLogger } from '../../utils/logger';
-import type { ApiResponse, ApiErrorResponse, PaginatedResponse } from '../../types/api';
+import type { ApiResponse, ApiErrorResponse } from '../../types/api';
 
 // Global token provider function that will be set by the auth context
 let getAccessToken: (() => Promise<string>) | null = null;
@@ -231,7 +231,7 @@ export class BaseApiClient {
   }
 
   // File download helper
-  async downloadFile(endpoint: string, filename?: string): Promise<Blob> {
+  async downloadFile(endpoint: string, _filename?: string): Promise<Blob> {
     const authHeaders = await getAuthHeaders();
     
     const response = await fetch(`${this.baseUrl}${endpoint}`, {

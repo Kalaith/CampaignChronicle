@@ -21,14 +21,12 @@ interface RelationshipGraphProps {
   characters: Character[];
   relationships: Relationship[];
   onCharacterClick?: (character: Character) => void;
-  onRelationshipClick?: (relationship: Relationship) => void;
 }
 
 export const RelationshipGraph: React.FC<RelationshipGraphProps> = ({
   characters,
   relationships,
   onCharacterClick,
-  onRelationshipClick,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
@@ -103,7 +101,6 @@ export const RelationshipGraph: React.FC<RelationshipGraphProps> = ({
   // Force simulation
   useEffect(() => {
     const simulate = () => {
-      const alpha = 0.1;
       const centerX = dimensions.width / 2;
       const centerY = dimensions.height / 2;
 

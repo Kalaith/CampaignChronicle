@@ -21,12 +21,10 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({
     templates,
     currentExpression,
     rollDice,
-    addTemplate,
     deleteTemplate,
     setCurrentExpression,
     clearHistory,
-    calculateProbabilities,
-    getRecentRolls
+    calculateProbabilities
   } = useDiceStore();
 
   const [customExpression, setCustomExpression] = useState(currentExpression);
@@ -36,12 +34,6 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({
     isPrivate: false
   });
   const [activeTab, setActiveTab] = useState('roller');
-  const [newTemplate, setNewTemplate] = useState({
-    name: '',
-    expression: '',
-    description: '',
-    category: 'custom' as const
-  });
   const [showStatistics, setShowStatistics] = useState(false);
   
   const historyRef = useRef<HTMLDivElement>(null);
@@ -81,17 +73,6 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({
   const handleTemplateRoll = (template: typeof templates[0]) => {
     setCustomExpression(template.expression);
     handleRoll(template.expression);
-  };
-
-  const handleSaveTemplate = () => {
-    if (newTemplate.name && newTemplate.expression) {
-      addTemplate({
-        ...newTemplate,
-        campaignId: currentCampaign?.id || '',
-        tags: []
-      });
-      setNewTemplate({ name: '', expression: '', description: '', category: 'custom' });
-    }
   };
 
   const formatRollResult = (roll: typeof rolls[0]) => {

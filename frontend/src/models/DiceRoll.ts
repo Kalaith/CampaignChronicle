@@ -94,22 +94,22 @@ export class DiceRoll {
   /**
    * Create a DiceRoll from API response data
    */
-  static fromApiResponse(data: any): DiceRoll {
+  static fromApiResponse(data: Record<string, unknown>): DiceRoll {
     return new DiceRoll(
-      data.id,
-      data.campaignId || data.campaign_id,
-      data.expression,
-      data.result,
-      data.individualRolls || data.individual_rolls,
-      data.modifier || 0,
-      new Date(data.timestamp || data.created_at),
+      String(data.id ?? ''),
+      String(data.campaignId ?? data.campaign_id ?? ''),
+      String(data.expression ?? ''),
+      Number(data.result ?? 0),
+      (Array.isArray(data.individualRolls) ? data.individualRolls : data.individual_rolls) as number[],
+      Number(data.modifier ?? 0),
+      new Date(String(data.timestamp ?? data.created_at ?? new Date().toISOString())),
       {
-        advantage: data.advantage,
-        disadvantage: data.disadvantage,
-        isPrivate: data.isPrivate || data.is_private,
-        context: data.context,
-        playerId: data.playerId || data.player_id,
-        playerName: data.playerName || data.player_name
+        advantage: Boolean(data.advantage),
+        disadvantage: Boolean(data.disadvantage),
+        isPrivate: Boolean(data.isPrivate ?? data.is_private),
+        context: typeof data.context === 'string' ? data.context : undefined,
+        playerId: typeof (data.playerId ?? data.player_id) === 'string' ? String(data.playerId ?? data.player_id) : undefined,
+        playerName: typeof (data.playerName ?? data.player_name) === 'string' ? String(data.playerName ?? data.player_name) : undefined
       }
     );
   }
@@ -235,7 +235,7 @@ export class DiceRoll {
   /**
    * Convert to API format
    */
-  toApiFormat(): any {
+  toApiFormat(): Record<string, unknown> {
     return {
       id: this.id,
       campaign_id: this.campaignId,

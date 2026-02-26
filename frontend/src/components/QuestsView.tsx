@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Quest, QuestObjective, Character, Location } from '../types';
+import type { Quest, Character, Location } from '../types';
 import { Modal } from './Modal';
 
 interface QuestsViewProps {
@@ -349,9 +349,10 @@ export const QuestsView = ({
           return a.title.localeCompare(b.title);
         case 'status':
           return a.status.localeCompare(b.status);
-        case 'priority':
+        case 'priority': {
           const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
           return priorityOrder[a.priority] - priorityOrder[b.priority];
+        }
         case 'created':
         default:
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();

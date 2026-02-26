@@ -200,7 +200,7 @@ export class CampaignService {
   /**
    * Business logic for campaign status management
    */
-  canDeleteCampaign(campaign: Campaign): { canDelete: boolean; reason?: string } {
+  canDeleteCampaign(_campaign: Campaign): { canDelete: boolean; reason?: string } {
     // Add business rules here
     return { canDelete: true };
   }

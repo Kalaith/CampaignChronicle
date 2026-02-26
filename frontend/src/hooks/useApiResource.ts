@@ -125,7 +125,7 @@ export function useApiResource<T>(
 /**
  * Hook for managing form submission with validation and error handling
  */
-export function useFormSubmission<T = any>(
+export function useFormSubmission<T = unknown>(
   onSubmit: (data: T) => Promise<void>,
   options: {
     validate?: (data: T) => Record<string, string[]> | null;

@@ -1,7 +1,5 @@
 // Calculations Utility Module - Mathematical and game-specific calculations
 
-import { APP_CONSTANTS } from '../constants/app';
-
 // Basic mathematical utilities
 export const mathUtils = {
   clamp(value: number, min: number, max: number): number {

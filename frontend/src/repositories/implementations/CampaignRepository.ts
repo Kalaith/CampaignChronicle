@@ -31,7 +31,7 @@ export class CampaignRepository implements ICampaignRepository {
       const response = await this.apiClient.get<CampaignResponse>(`/campaigns/${id}`);
       return this.mapToDomainModel(response);
     } catch (error) {
-      if (error instanceof Error && 'status' in error && (error as any).status === 404) {
+      if (error instanceof Error && 'status' in error && (error as { status?: number }).status === 404) {
         return null;
       }
       apiLogger.error(`Failed to fetch campaign ${id}`, error);
@@ -76,7 +76,7 @@ export class CampaignRepository implements ICampaignRepository {
     }
   }
 
-  async search(campaignId: string, query: string, types?: string[]): Promise<any> {
+  async search(campaignId: string, query: string, types?: string[]): Promise<unknown> {
     try {
       apiLogger.debug(`Searching in campaign ${campaignId}`, { query, types });
       const params = new URLSearchParams({ q: query });
@@ -84,7 +84,7 @@ export class CampaignRepository implements ICampaignRepository {
         params.append('types', types.join(','));
       }
       
-      const response = await this.apiClient.get<any>(`/campaigns/${campaignId}/search?${params.toString()}`);
+      const response = await this.apiClient.get<unknown>(`/campaigns/${campaignId}/search?${params.toString()}`);
       return response;
     } catch (error) {
       apiLogger.error(`Failed to search in campaign ${campaignId}`, error);
@@ -92,7 +92,7 @@ export class CampaignRepository implements ICampaignRepository {
     }
   }
 
-  async export(campaignId: string, options?: { entities?: string[]; include_stats?: boolean }): Promise<any> {
+  async export(campaignId: string, options?: { entities?: string[]; include_stats?: boolean }): Promise<unknown> {
     try {
       apiLogger.debug(`Exporting campaign ${campaignId}`, options);
       const params = new URLSearchParams();
@@ -104,7 +104,7 @@ export class CampaignRepository implements ICampaignRepository {
       }
       
       const query = params.toString();
-      const response = await this.apiClient.get<any>(
+      const response = await this.apiClient.get<unknown>(
         `/campaigns/${campaignId}/export${query ? '?' + query : ''}`
       );
       
@@ -116,7 +116,7 @@ export class CampaignRepository implements ICampaignRepository {
     }
   }
 
-  async import(file: File, options?: { merge_duplicates?: boolean }): Promise<any> {
+  async import(file: File, options?: { merge_duplicates?: boolean }): Promise<unknown> {
     try {
       apiLogger.debug('Importing campaign data', { filename: file.name, size: file.size });
       const formData = new FormData();
@@ -126,7 +126,7 @@ export class CampaignRepository implements ICampaignRepository {
         formData.append('merge_duplicates', 'true');
       }
       
-      const response = await this.apiClient.post<any>('/import', formData);
+      const response = await this.apiClient.post<unknown>('/import', formData);
       apiLogger.info('Campaign data imported successfully');
       return response;
     } catch (error) {
@@ -135,10 +135,10 @@ export class CampaignRepository implements ICampaignRepository {
     }
   }
 
-  async getAnalytics(campaignId: string): Promise<any> {
+  async getAnalytics(campaignId: string): Promise<unknown> {
     try {
       apiLogger.debug(`Fetching analytics for campaign ${campaignId}`);
-      const response = await this.apiClient.get<any>(`/campaigns/${campaignId}/analytics`);
+      const response = await this.apiClient.get<unknown>(`/campaigns/${campaignId}/analytics`);
       return response;
     } catch (error) {
       apiLogger.error(`Failed to fetch analytics for campaign ${campaignId}`, error);

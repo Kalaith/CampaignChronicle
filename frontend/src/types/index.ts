@@ -63,7 +63,6 @@ export interface UpdateCharacterRequest {
   description?: string;
   tags?: string[];
 }
-}
 
 export interface Location {
   id: string;

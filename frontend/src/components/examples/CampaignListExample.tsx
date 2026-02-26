@@ -3,7 +3,6 @@
 import React from 'react';
 import { useApiResource, useFormSubmission } from '../../hooks/useApiResource';
 import { campaignService } from '../../services';
-import { ValidationSchemas } from '../../utils/validation';
 import { APP_CONSTANTS } from '../../constants/app';
 import type { CampaignListProps, CampaignCardProps } from '../../types/components';
 import type { Campaign, CreateCampaignRequest } from '../../types';
@@ -227,8 +226,7 @@ const CampaignFormExample: React.FC<CampaignFormProps> = ({
       }
     },
     {
-      validate: (data) => {
-        const result = ValidationSchemas.campaign;
+      validate: (_data) => {
         // This would use the actual validation logic
         return null; // No errors for this example
       },

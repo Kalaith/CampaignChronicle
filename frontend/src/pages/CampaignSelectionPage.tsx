@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useApiCampaignStore } from '../stores/apiCampaignStore';
-import { migrateLegacyData } from '../utils/localStorage';
 import { CampaignSelection } from '../components/CampaignSelection';
 import { NewCampaignModal } from '../components/Modal';
 import type { Campaign } from '../types';

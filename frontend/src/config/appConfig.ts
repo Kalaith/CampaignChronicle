@@ -68,7 +68,7 @@ const loadConfig = (): AppConfig => {
       enableMobileCompanion: import.meta.env.VITE_ENABLE_MOBILE_COMPANION !== 'false',
     },
     logging: {
-      level: (import.meta.env.VITE_LOG_LEVEL as any) || (isDevelopment ? 'debug' : 'info'),
+      level: (import.meta.env.VITE_LOG_LEVEL as AppConfig['logging']['level']) || (isDevelopment ? 'debug' : 'info'),
       enableConsoleOutput: import.meta.env.VITE_ENABLE_CONSOLE_LOGGING !== 'false',
       enableRemoteLogging: import.meta.env.VITE_ENABLE_REMOTE_LOGGING === 'true',
     },

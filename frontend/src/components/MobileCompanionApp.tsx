@@ -1,40 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { 
   Smartphone, 
   QrCode, 
-  Eye, 
-  RefreshCw,
   Users,
   Scroll,
-  MapPin,
   Swords,
-  Clock,
-  Book,
   Dice6,
   Heart,
   Shield,
-  Zap,
-  Star,
   Plus,
   Minus,
   Volume2,
   VolumeX
 } from 'lucide-react';
-import { playerAccessApi, characterApi, noteApi } from '@/services/api';
+import type { Character } from '@/types';
 import { useCampaignStore } from '@/stores/campaignStore';
-import { useDiceStore } from '@/stores/diceStore';
 import { DiceRoller } from './DiceRoller';
 
 interface MobileSession {
-  characters: any[];
+  characters: Character[];
   quickNotes: string[];
   initiativeTracker: { name: string; initiative: number; hp?: number; maxHp?: number }[];
   soundscape: {
@@ -55,7 +45,7 @@ export const MobileCompanionApp: React.FC<MobileCompanionAppProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { campaign, characters } = useCampaignStore();
+  const { characters } = useCampaignStore();
   const [mobileSession, setMobileSession] = useState<MobileSession>({
     characters: [],
     quickNotes: [],
@@ -71,14 +61,7 @@ export const MobileCompanionApp: React.FC<MobileCompanionAppProps> = ({
   const [newNote, setNewNote] = useState('');
   const [newInitiative, setNewInitiative] = useState({ name: '', initiative: 0 });
 
-  useEffect(() => {
-    if (isOpen && campaignId) {
-      generateMobileUrl();
-      loadSessionData();
-    }
-  }, [isOpen, campaignId]);
-
-  const generateMobileUrl = () => {
+  const generateMobileUrl = useCallback(() => {
     // Generate a simple mobile-friendly URL
     const baseUrl = window.location.origin;
     const mobileUrl = `${baseUrl}/mobile/${campaignId}`;
@@ -87,15 +70,22 @@ export const MobileCompanionApp: React.FC<MobileCompanionAppProps> = ({
     // Generate QR code URL (using a service or would need QR library)
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(mobileUrl)}`;
     setQrCode(qrUrl);
-  };
+  }, [campaignId]);
 
-  const loadSessionData = () => {
+  const loadSessionData = useCallback(() => {
     // Load characters
     setMobileSession(prev => ({
       ...prev,
       characters: characters.slice(0, 6), // Limit for mobile view
     }));
-  };
+  }, [characters]);
+
+  useEffect(() => {
+    if (isOpen && campaignId) {
+      generateMobileUrl();
+      loadSessionData();
+    }
+  }, [isOpen, campaignId, generateMobileUrl, loadSessionData]);
 
   const addQuickNote = () => {
     if (newNote.trim()) {

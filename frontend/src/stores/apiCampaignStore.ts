@@ -1,10 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Campaign, Character, Location, Item, Note, Relationship, TimelineEvent, Quest, CampaignMap } from '../types';
-import { campaignService, characterService } from '../services';
-import { AppError, errorHandler } from '../utils/errors';
+import { campaignService } from '../services';
+import { errorHandler } from '../utils/errors';
 import { storeLogger } from '../utils/logger';
-import { APP_CONSTANTS } from '../constants/app';
 
 interface CampaignState {
   // Data
@@ -94,10 +93,10 @@ interface CampaignActions {
   loadCampaignData: (campaignId: string) => Promise<void>;
 
   // Search
-  search: (query: string, types?: string[]) => Promise<any>;
+  search: (query: string, types?: string[]) => Promise<unknown>;
 
   // Import/Export (now uses backend)
-  exportCampaign: (campaignId: string) => Promise<any>;
+  exportCampaign: (campaignId: string) => Promise<unknown>;
   importCampaignData: (data: unknown) => Promise<void>;
 
   // Utility Functions
@@ -113,65 +112,69 @@ const handleStoreError = (error: unknown, context: string, set: (state: Partial<
   set({ error: appError.userMessage, isLoading: false });
 };
 
-// Helper to transform backend data to frontend format
-const transformCampaign = (backendCampaign: any): Campaign => ({
-  id: backendCampaign.id,
-  name: backendCampaign.name,
-  description: backendCampaign.description || '',
-  createdAt: backendCampaign.created_at,
-  lastModified: backendCampaign.updated_at,
+type BackendRecord = Record<string, unknown>;
+
+const asString = (value: unknown, fallback = ''): string =>
+  typeof value === 'string' ? value : fallback;
+
+const asNumber = (value: unknown, fallback = 0): number =>
+  typeof value === 'number' ? value : fallback;
+
+const asStringArray = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
+
+const transformCharacter = (backendChar: BackendRecord): Character => ({
+  id: asString(backendChar.id),
+  campaignId: asString(backendChar.campaign_id),
+  name: asString(backendChar.name),
+  type: (asString(backendChar.type, 'npc') as Character['type']),
+  race: asString(backendChar.race),
+  class: asString(backendChar.class),
+  level: asNumber(backendChar.level, 1),
+  description: asString(backendChar.description),
+  hp: typeof backendChar.hp === 'number' ? backendChar.hp : undefined,
+  ac: typeof backendChar.ac === 'number' ? backendChar.ac : undefined,
+  status: (asString(backendChar.status, 'alive') as Character['status']),
+  location: typeof backendChar.location === 'string' ? backendChar.location : undefined,
+  tags: asStringArray(backendChar.tags),
 });
 
-const transformCharacter = (backendChar: any): Character => ({
-  id: backendChar.id,
-  campaignId: backendChar.campaign_id,
-  name: backendChar.name,
-  type: backendChar.type as Character['type'],
-  race: backendChar.race || '',
-  class: backendChar.class || '',
-  level: backendChar.level || 1,
-  description: backendChar.description || '',
-  hp: backendChar.hp,
-  ac: backendChar.ac,
-  status: backendChar.status || 'alive',
-  location: backendChar.location,
-  tags: backendChar.tags || [],
+const transformLocation = (backendLoc: BackendRecord): Location => ({
+  id: asString(backendLoc.id),
+  campaignId: asString(backendLoc.campaign_id),
+  name: asString(backendLoc.name),
+  type: (asString(backendLoc.type, 'city') as Location['type']),
+  description: asString(backendLoc.description),
+  parentId: typeof backendLoc.parent_location === 'string' ? backendLoc.parent_location : undefined,
+  tags: asStringArray(backendLoc.tags),
 });
 
-const transformLocation = (backendLoc: any): Location => ({
-  id: backendLoc.id,
-  campaignId: backendLoc.campaign_id,
-  name: backendLoc.name,
-  type: backendLoc.type as Location['type'],
-  description: backendLoc.description || '',
-  parentId: backendLoc.parent_location,
-  tags: backendLoc.tags || [],
+const transformItem = (backendItem: BackendRecord): Item => ({
+  id: asString(backendItem.id),
+  campaignId: asString(backendItem.campaign_id),
+  name: asString(backendItem.name),
+  type: (asString(backendItem.type, 'misc') as Item['type']),
+  description: asString(backendItem.description),
+  quantity: asNumber(backendItem.quantity, 1),
+  value: asNumber(backendItem.value, 0),
+  weight: asNumber(backendItem.weight, 0),
+  rarity: (asString(backendItem.rarity, 'common') as Item['rarity']),
+  properties: (backendItem.properties && typeof backendItem.properties === 'object'
+    ? backendItem.properties
+    : {}) as Item['properties'],
+  owner: typeof backendItem.owner === 'string' ? backendItem.owner : undefined,
+  location: typeof backendItem.location === 'string' ? backendItem.location : undefined,
+  tags: asStringArray(backendItem.tags),
 });
 
-const transformItem = (backendItem: any): Item => ({
-  id: backendItem.id,
-  campaignId: backendItem.campaign_id,
-  name: backendItem.name,
-  type: backendItem.type as Item['type'],
-  description: backendItem.description || '',
-  quantity: backendItem.quantity || 1,
-  value: backendItem.value || 0,
-  weight: backendItem.weight || 0,
-  rarity: backendItem.rarity as Item['rarity'] || 'common',
-  properties: backendItem.properties || {},
-  owner: backendItem.owner,
-  location: backendItem.location,
-  tags: backendItem.tags || [],
-});
-
-const transformNote = (backendNote: any): Note => ({
-  id: backendNote.id,
-  campaignId: backendNote.campaign_id,
-  title: backendNote.title,
-  content: backendNote.content,
-  createdAt: backendNote.created_at,
-  lastModified: backendNote.updated_at,
-  tags: backendNote.tags || [],
+const transformNote = (backendNote: BackendRecord): Note => ({
+  id: asString(backendNote.id),
+  campaignId: asString(backendNote.campaign_id),
+  title: asString(backendNote.title),
+  content: asString(backendNote.content),
+  createdAt: asString(backendNote.created_at),
+  lastModified: asString(backendNote.updated_at),
+  tags: asStringArray(backendNote.tags),
 });
 
 export const useApiCampaignStore = create<CampaignStore>()(
@@ -812,21 +815,12 @@ export const useApiCampaignStore = create<CampaignStore>()(
       search: async (query, types) => {
         const { currentCampaign } = get();
         if (!currentCampaign) throw new Error('No campaign selected');
-
-        try {
-          return await campaignApi.search(currentCampaign.id, query, types);
-        } catch (error) {
-          throw error;
-        }
+        return campaignApi.search(currentCampaign.id, query, types);
       },
 
       // Export/Import
       exportCampaign: async (campaignId) => {
-        try {
-          return await campaignApi.export(campaignId);
-        } catch (error) {
-          throw error;
-        }
+        return campaignApi.export(campaignId);
       },
 
       importCampaignData: async (data) => {

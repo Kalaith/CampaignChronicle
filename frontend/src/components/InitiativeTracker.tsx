@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Character } from '../types';
 import { Modal } from './Modal';
 
@@ -34,23 +34,6 @@ interface AddCombatantModalProps {
   onAdd: (combatant: Omit<InitiativeEntry, 'id' | 'statusEffects'>) => void;
   characters: Character[];
 }
-
-const predefinedStatusEffects = [
-  { name: 'Blessed', description: '+1d4 to attack rolls and saves', type: 'buff' as const },
-  { name: 'Poisoned', description: 'Disadvantage on attack rolls and ability checks', type: 'debuff' as const },
-  { name: 'Paralyzed', description: 'Cannot move or act', type: 'debuff' as const },
-  { name: 'Stunned', description: 'Cannot move or act, fails Str/Dex saves', type: 'debuff' as const },
-  { name: 'Charmed', description: 'Cannot attack charmer, charmer has advantage on social interactions', type: 'debuff' as const },
-  { name: 'Frightened', description: 'Disadvantage on ability checks and attacks while source is in sight', type: 'debuff' as const },
-  { name: 'Blinded', description: 'Cannot see, auto-fail sight checks, disadvantage on attacks', type: 'debuff' as const },
-  { name: 'Deafened', description: 'Cannot hear, auto-fail hearing checks', type: 'debuff' as const },
-  { name: 'Prone', description: 'Can only crawl, disadvantage on melee attacks', type: 'debuff' as const },
-  { name: 'Restrained', description: 'Speed 0, disadvantage on attacks and Dex saves', type: 'debuff' as const },
-  { name: 'Haste', description: 'Double speed, extra action, +2 AC', type: 'buff' as const },
-  { name: 'Slow', description: 'Half speed, -2 AC, limited actions', type: 'debuff' as const },
-  { name: 'Invisible', description: 'Cannot be seen, advantage on attacks', type: 'buff' as const },
-  { name: 'Concentration', description: 'Maintaining a spell', type: 'neutral' as const },
-];
 
 const AddCombatantModal = ({ isOpen, onClose, onAdd, characters }: AddCombatantModalProps) => {
   const [formData, setFormData] = useState({

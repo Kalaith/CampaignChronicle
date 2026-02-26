@@ -4,7 +4,6 @@ import { StateCreator } from 'zustand';
 import { characterService } from '../../services';
 import { storeLogger } from '../../utils/logger';
 import type { Character, CreateCharacterRequest, UpdateCharacterRequest } from '../../types';
-import type { CharacterFilterOptions } from '../../services/CharacterService';
 
 export interface CharactersState {
   characters: Character[];

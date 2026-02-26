@@ -70,7 +70,7 @@ const PinModal = ({ isOpen, onClose, onSubmit, locations, pin, x, y }: PinModalP
         color: selectedType?.color || '#3B82F6',
       }));
     }
-  }, [pin, x, y]);
+  }, [pin, x, y, formData.type]);
 
   const handleTypeChange = (newType: MapPin['type']) => {
     const selectedType = pinTypes.find(t => t.type === newType);
@@ -250,7 +250,7 @@ export const MapViewer = ({
   map, 
   locations, 
   onUpdateMap, 
-  onDeleteMap, 
+  onDeleteMap: _onDeleteMap,
   isEditMode, 
   onToggleEditMode 
 }: MapViewerProps) => {

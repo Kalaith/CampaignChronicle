@@ -17,39 +17,26 @@ import type {
 } from '../types';
 
 import type {
-  CampaignResponse,
   CreateCampaignRequest,
   UpdateCampaignRequest,
-  CharacterResponse,
   CreateCharacterRequest,
   UpdateCharacterRequest,
-  LocationResponse,
   CreateLocationRequest,
   UpdateLocationRequest,
-  ItemResponse,
   CreateItemRequest,
   UpdateItemRequest,
-  NoteResponse,
   CreateNoteRequest,
   UpdateNoteRequest,
-  RelationshipResponse,
   CreateRelationshipRequest,
   UpdateRelationshipRequest,
-  TimelineEventResponse,
   CreateTimelineEventRequest,
   UpdateTimelineEventRequest,
-  QuestResponse,
   CreateQuestRequest,
-  MapResponse,
   CreateMapRequest,
-  DiceRollResponse,
   CreateDiceRollRequest,
-  DiceTemplateResponse,
   CreateDiceTemplateRequest,
   DiceStatisticsResponse,
-  SharedResourceResponse,
   CreateSharedResourceRequest,
-  PlayerAccessResponse,
   CreatePlayerAccessRequest,
   PaginatedResponse,
   SearchFilters
@@ -66,10 +53,10 @@ export interface BaseRepository<T, TCreate, TUpdate> {
 
 // Campaign Repository
 export interface ICampaignRepository extends BaseRepository<Campaign, CreateCampaignRequest, UpdateCampaignRequest> {
-  search(campaignId: string, query: string, types?: string[]): Promise<any>;
-  export(campaignId: string, options?: { entities?: string[]; include_stats?: boolean }): Promise<any>;
-  import(file: File, options?: { merge_duplicates?: boolean }): Promise<any>;
-  getAnalytics(campaignId: string): Promise<any>;
+  search(campaignId: string, query: string, types?: string[]): Promise<unknown>;
+  export(campaignId: string, options?: { entities?: string[]; include_stats?: boolean }): Promise<unknown>;
+  import(file: File, options?: { merge_duplicates?: boolean }): Promise<unknown>;
+  getAnalytics(campaignId: string): Promise<unknown>;
 }
 
 // Character Repository
@@ -95,35 +82,35 @@ export interface IItemRepository extends BaseRepository<Item, CreateItemRequest,
   findByOwner(ownerId: string): Promise<Item[]>;
   findByLocation(locationId: string): Promise<Item[]>;
   transfer(itemId: string, toOwner?: string, toLocation?: string): Promise<Item>;
-  getHistory(itemId: string): Promise<any[]>;
+  getHistory(itemId: string): Promise<unknown[]>;
 }
 
 // Note Repository
 export interface INoteRepository extends BaseRepository<Note, CreateNoteRequest, UpdateNoteRequest> {
   findByCampaign(campaignId: string, filters?: SearchFilters): Promise<PaginatedResponse<Note>>;
   search(campaignId: string, query: string): Promise<Note[]>;
-  getReferences(noteId: string): Promise<any[]>;
-  getStatistics(campaignId: string): Promise<any>;
+  getReferences(noteId: string): Promise<unknown[]>;
+  getStatistics(campaignId: string): Promise<unknown>;
 }
 
 // Relationship Repository
 export interface IRelationshipRepository extends BaseRepository<Relationship, CreateRelationshipRequest, UpdateRelationshipRequest> {
   findByCampaign(campaignId: string, filters?: SearchFilters): Promise<PaginatedResponse<Relationship>>;
   findByCharacter(characterId: string): Promise<Relationship[]>;
-  getNetwork(campaignId: string): Promise<any>;
+  getNetwork(campaignId: string): Promise<unknown>;
   findPath(fromCharacterId: string, toCharacterId: string): Promise<Relationship[]>;
-  getStatistics(campaignId: string): Promise<any>;
+  getStatistics(campaignId: string): Promise<unknown>;
 }
 
 // Timeline Event Repository
 export interface ITimelineEventRepository extends BaseRepository<TimelineEvent, CreateTimelineEventRequest, UpdateTimelineEventRequest> {
   findByCampaign(campaignId: string, filters?: SearchFilters): Promise<PaginatedResponse<TimelineEvent>>;
-  getGroupedBySessions(campaignId: string): Promise<any>;
+  getGroupedBySessions(campaignId: string): Promise<unknown>;
   getCharacterInvolvement(characterId: string): Promise<TimelineEvent[]>;
   getLocationHistory(locationId: string): Promise<TimelineEvent[]>;
-  getActivity(campaignId: string, days?: number): Promise<any>;
-  getMentions(campaignId: string): Promise<any>;
-  getStatistics(campaignId: string): Promise<any>;
+  getActivity(campaignId: string, days?: number): Promise<unknown>;
+  getMentions(campaignId: string): Promise<unknown>;
+  getStatistics(campaignId: string): Promise<unknown>;
   addRelatedEntity(eventId: string, entityType: string, entityId: string): Promise<TimelineEvent>;
 }
 
@@ -134,7 +121,7 @@ export interface IQuestRepository extends BaseRepository<Quest, CreateQuestReque
   addObjective(questId: string, objective: { description: string }): Promise<Quest>;
   updateObjective(questId: string, objectiveId: string, updates: { description?: string; completed?: boolean }): Promise<Quest>;
   deleteObjective(questId: string, objectiveId: string): Promise<Quest>;
-  getStatistics(campaignId: string): Promise<any>;
+  getStatistics(campaignId: string): Promise<unknown>;
 }
 
 // Map Repository
@@ -160,7 +147,7 @@ export interface IDiceRepository {
   }): Promise<DiceRoll[]>;
   createRoll(campaignId: string, rollData: CreateDiceRollRequest): Promise<DiceRoll>;
   deleteRoll(campaignId: string, rollId: string): Promise<void>;
-  clearRollHistory(campaignId: string, playerId?: string): Promise<any>;
+  clearRollHistory(campaignId: string, playerId?: string): Promise<unknown>;
   getRecentRolls(campaignId: string, params?: { since?: string; limit?: number }): Promise<DiceRoll[]>;
   
   // Templates
@@ -186,7 +173,7 @@ export interface ISharedResourceRepository extends BaseRepository<SharedResource
     tag?: string;
   }): Promise<SharedResource[]>;
   download(resourceId: string): Promise<Blob>;
-  getResourceInfo(): Promise<any>;
+  getResourceInfo(): Promise<unknown>;
   
   // Player portal access
   getPlayerResources(token: string, filters?: {
@@ -199,51 +186,51 @@ export interface ISharedResourceRepository extends BaseRepository<SharedResource
 export interface IPlayerAccessRepository extends BaseRepository<PlayerAccess, CreatePlayerAccessRequest, UpdatePlayerAccessRequest> {
   findByCampaign(campaignId: string): Promise<PlayerAccess[]>;
   regenerateToken(accessId: string): Promise<PlayerAccess>;
-  getPortalAccess(token: string): Promise<any>;
-  getCampaignData(token: string): Promise<any>;
-  getPermissions(): Promise<any>;
+  getPortalAccess(token: string): Promise<unknown>;
+  getCampaignData(token: string): Promise<unknown>;
+  getPermissions(): Promise<unknown>;
 }
 
 // Weather Repository
 export interface IWeatherRepository {
-  getWeather(campaignId: string): Promise<any>;
-  generateWeather(campaignId: string, options?: any): Promise<any>;
-  advanceDay(campaignId: string): Promise<any>;
-  setDate(campaignId: string, date: string): Promise<any>;
-  addEvent(campaignId: string, event: any): Promise<any>;
-  updateEvent(campaignId: string, eventId: string, updates: any): Promise<any>;
+  getWeather(campaignId: string): Promise<unknown>;
+  generateWeather(campaignId: string, options?: unknown): Promise<unknown>;
+  advanceDay(campaignId: string): Promise<unknown>;
+  setDate(campaignId: string, date: string): Promise<unknown>;
+  addEvent(campaignId: string, event: unknown): Promise<unknown>;
+  updateEvent(campaignId: string, eventId: string, updates: unknown): Promise<unknown>;
   deleteEvent(campaignId: string, eventId: string): Promise<void>;
-  getUpcomingEvents(campaignId: string): Promise<any[]>;
-  getStatistics(campaignId: string): Promise<any>;
-  getWeatherInfo(): Promise<any>;
+  getUpcomingEvents(campaignId: string): Promise<unknown[]>;
+  getStatistics(campaignId: string): Promise<unknown>;
+  getWeatherInfo(): Promise<unknown>;
 }
 
 // NPC Repository
 export interface INPCRepository {
-  generate(campaignId: string, options?: any): Promise<Character>;
-  generateBatch(campaignId: string, count: number, options?: any): Promise<Character[]>;
-  getRaces(): Promise<any[]>;
-  getRaceTemplate(race: string): Promise<any>;
+  generate(campaignId: string, options?: unknown): Promise<Character>;
+  generateBatch(campaignId: string, count: number, options?: unknown): Promise<Character[]>;
+  getRaces(): Promise<unknown[]>;
+  getRaceTemplate(race: string): Promise<unknown>;
 }
 
 // Initiative/Combat Repository
 export interface ICombatRepository {
-  getEncounters(campaignId: string): Promise<any[]>;
-  createEncounter(campaignId: string, encounter: any): Promise<any>;
-  getEncounter(campaignId: string, encounterId: string): Promise<any>;
-  updateEncounter(campaignId: string, encounterId: string, updates: any): Promise<any>;
+  getEncounters(campaignId: string): Promise<unknown[]>;
+  createEncounter(campaignId: string, encounter: unknown): Promise<unknown>;
+  getEncounter(campaignId: string, encounterId: string): Promise<unknown>;
+  updateEncounter(campaignId: string, encounterId: string, updates: unknown): Promise<unknown>;
   deleteEncounter(campaignId: string, encounterId: string): Promise<void>;
-  startEncounter(campaignId: string, encounterId: string): Promise<any>;
-  endEncounter(campaignId: string, encounterId: string): Promise<any>;
-  nextTurn(campaignId: string, encounterId: string): Promise<any>;
-  addCombatant(campaignId: string, encounterId: string, combatant: any): Promise<any>;
-  updateCombatant(campaignId: string, encounterId: string, combatantId: string, updates: any): Promise<any>;
+  startEncounter(campaignId: string, encounterId: string): Promise<unknown>;
+  endEncounter(campaignId: string, encounterId: string): Promise<unknown>;
+  nextTurn(campaignId: string, encounterId: string): Promise<unknown>;
+  addCombatant(campaignId: string, encounterId: string, combatant: unknown): Promise<unknown>;
+  updateCombatant(campaignId: string, encounterId: string, combatantId: string, updates: unknown): Promise<unknown>;
   removeCombatant(campaignId: string, encounterId: string, combatantId: string): Promise<void>;
-  applyDamage(campaignId: string, encounterId: string, combatantId: string, damage: number): Promise<any>;
-  applyHealing(campaignId: string, encounterId: string, combatantId: string, healing: number): Promise<any>;
-  addStatusEffect(campaignId: string, encounterId: string, combatantId: string, effect: any): Promise<any>;
+  applyDamage(campaignId: string, encounterId: string, combatantId: string, damage: number): Promise<unknown>;
+  applyHealing(campaignId: string, encounterId: string, combatantId: string, healing: number): Promise<unknown>;
+  addStatusEffect(campaignId: string, encounterId: string, combatantId: string, effect: unknown): Promise<unknown>;
   removeStatusEffect(campaignId: string, encounterId: string, combatantId: string, effectId: string): Promise<void>;
-  getSummary(campaignId: string, encounterId: string): Promise<any>;
+  getSummary(campaignId: string, encounterId: string): Promise<unknown>;
 }
 
 // Generic update interface (used in base repository)
@@ -263,6 +250,6 @@ interface UpdateSharedResourceRequest {
 
 interface UpdatePlayerAccessRequest {
   playerName?: string;
-  permissions?: any;
+  permissions?: unknown;
   isActive?: boolean;
 }

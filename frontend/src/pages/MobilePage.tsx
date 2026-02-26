@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,7 @@ import {
   WifiOff,
   Wifi
 } from 'lucide-react';
-import { campaignApi, characterApi, noteApi } from '@/services/api';
+import { campaignApi, characterApi } from '@/services/api';
 
 interface Character {
   id: string;
@@ -100,13 +100,7 @@ export const MobilePage: React.FC = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (campaignId) {
-      loadCampaignData();
-    }
-  }, [campaignId]);
-
-  const loadCampaignData = async () => {
+  const loadCampaignData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -132,7 +126,13 @@ export const MobilePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [campaignId]);
+
+  useEffect(() => {
+    if (campaignId) {
+      loadCampaignData();
+    }
+  }, [campaignId, loadCampaignData]);
 
   // Cache data when online
   useEffect(() => {
@@ -167,7 +167,7 @@ export const MobilePage: React.FC = () => {
   const rollDice = () => {
     try {
       // Simple dice parsing (1d20, 2d6, etc.)
-      const match = diceRoll.match(/^(\d+)d(\d+)(?:\+(\d+))?(?:\-(\d+))?$/i);
+      const match = diceRoll.match(/^(\d+)d(\d+)(?:\+(\d+))?(?:-(\d+))?$/i);
       if (!match) return;
 
       const [, numDice, sides, addMod, subMod] = match;
@@ -196,7 +196,7 @@ export const MobilePage: React.FC = () => {
         ...prev,
         diceHistory: [rollResult, ...prev.diceHistory.slice(0, 9)], // Keep last 10
       }));
-    } catch (error) {
+    } catch {
       console.error('Invalid dice format');
     }
   };
@@ -427,8 +427,6 @@ export const MobilePage: React.FC = () => {
                       setDiceRoll(dice);
                       // Auto-roll for quick buttons
                       setTimeout(() => {
-                        const event = { target: { value: dice } };
-                        setDiceRoll(dice);
                         rollDice();
                       }, 100);
                     }}

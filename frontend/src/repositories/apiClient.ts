@@ -1,7 +1,7 @@
 // API Client abstraction layer for repositories
 
 import { appConfig } from '../config/appConfig';
-import { ApiError, ErrorCode, errorHandler } from '../utils/errors';
+import { ApiError, errorHandler } from '../utils/errors';
 import { apiLogger } from '../utils/logger';
 import type { ApiResponse, ApiErrorResponse } from '../types/api';
 
@@ -138,7 +138,7 @@ export class ApiClient {
   }
 
   private async handleResponse<T>(response: Response): Promise<T> {
-    let responseData: any;
+    let responseData: unknown;
 
     try {
       const contentType = response.headers.get('content-type');
@@ -193,21 +193,22 @@ export class ApiClient {
     return responseData;
   }
 
-  private extractErrorMessage(responseData: any): string {
+  private extractErrorMessage(responseData: unknown): string {
+    const responseRecord = responseData as { message?: string; error?: string; errors?: unknown[] } | null;
     if (typeof responseData === 'string') {
       return responseData;
     }
 
-    if (responseData?.message) {
-      return responseData.message;
+    if (responseRecord?.message) {
+      return responseRecord.message;
     }
 
-    if (responseData?.error) {
-      return responseData.error;
+    if (responseRecord?.error) {
+      return responseRecord.error;
     }
 
-    if (responseData?.errors && Array.isArray(responseData.errors)) {
-      return responseData.errors.join(', ');
+    if (responseRecord?.errors && Array.isArray(responseRecord.errors)) {
+      return responseRecord.errors.join(', ');
     }
 
     return 'An unknown error occurred';
@@ -222,17 +223,17 @@ export class ApiClient {
     return this.makeRequest<T>(endpoint, { ...config, method: 'GET' });
   }
 
-  async post<T>(endpoint: string, data?: any, config?: Omit<RequestConfig, 'method'>): Promise<T> {
+  async post<T>(endpoint: string, data?: unknown, config?: Omit<RequestConfig, 'method'>): Promise<T> {
     const body = data instanceof FormData ? data : JSON.stringify(data);
     return this.makeRequest<T>(endpoint, { ...config, method: 'POST', body });
   }
 
-  async put<T>(endpoint: string, data?: any, config?: Omit<RequestConfig, 'method'>): Promise<T> {
+  async put<T>(endpoint: string, data?: unknown, config?: Omit<RequestConfig, 'method'>): Promise<T> {
     const body = data instanceof FormData ? data : JSON.stringify(data);
     return this.makeRequest<T>(endpoint, { ...config, method: 'PUT', body });
   }
 
-  async patch<T>(endpoint: string, data?: any, config?: Omit<RequestConfig, 'method'>): Promise<T> {
+  async patch<T>(endpoint: string, data?: unknown, config?: Omit<RequestConfig, 'method'>): Promise<T> {
     const body = data instanceof FormData ? data : JSON.stringify(data);
     return this.makeRequest<T>(endpoint, { ...config, method: 'PATCH', body });
   }
@@ -257,7 +258,7 @@ export class ApiClient {
   }
 
   // Download helper for files
-  async downloadFile(endpoint: string, filename?: string): Promise<Blob> {
+  async downloadFile(endpoint: string, _filename?: string): Promise<Blob> {
     const authHeaders = await this.getAuthHeaders();
     
     const response = await fetch(`${this.baseUrl}${endpoint}`, {

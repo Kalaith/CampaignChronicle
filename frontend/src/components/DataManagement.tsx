@@ -17,9 +17,7 @@ export const DataManagement = ({ isOpen, onClose }: DataManagementProps) => {
     items,
     notes,
     relationships,
-    exportCampaign,
     importCampaignData: importCampaign,
-    isLoading,
   } = useApiCampaignStore();
 
   const [isImporting, setIsImporting] = useState(false);

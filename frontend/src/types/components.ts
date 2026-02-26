@@ -369,12 +369,12 @@ import type {
 // Additional standardized component props for consistency
 
 // Data display components
-export interface DataTableProps<T = any> extends BaseComponentProps {
+export interface DataTableProps<T = unknown> extends BaseComponentProps {
   data: T[];
   columns: Array<{
     key: string;
     title: string;
-    render?: (value: any, record: T) => ReactNode;
+    render?: (value: unknown, record: T) => ReactNode;
     sortable?: boolean;
     width?: string;
   }>;
@@ -591,9 +591,9 @@ export interface DiceRollItemProps extends BaseComponentProps {
 }
 
 export interface DiceTemplateListProps extends BaseComponentProps {
-  templates: any[];
-  onSelect?: (template: any) => void;
-  onEdit?: (template: any) => void;
+  templates: unknown[];
+  onSelect?: (template: unknown) => void;
+  onEdit?: (template: unknown) => void;
   onDelete?: (templateId: string) => void;
   onAdd?: () => void;
   loading?: boolean;

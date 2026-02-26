@@ -1,7 +1,5 @@
 // Formatting Utility Module - Text and data formatting functions
 
-import { APP_CONSTANTS } from '../constants/app';
-
 // Text formatting utilities
 export const textUtils = {
   capitalize(text: string): string {

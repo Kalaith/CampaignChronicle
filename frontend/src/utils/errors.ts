@@ -1,22 +1,22 @@
 // Custom error classes with proper typing and context
 export enum ErrorCode {
   // API Errors
-  API_ERROR = 'API_ERROR',
-  NETWORK_ERROR = 'NETWORK_ERROR',
-  AUTHENTICATION_ERROR = 'AUTHENTICATION_ERROR',
-  AUTHORIZATION_ERROR = 'AUTHORIZATION_ERROR',
-  VALIDATION_ERROR = 'VALIDATION_ERROR',
-  NOT_FOUND_ERROR = 'NOT_FOUND_ERROR',
+  ApiError = 'API_ERROR',
+  NetworkError = 'NETWORK_ERROR',
+  AuthenticationError = 'AUTHENTICATION_ERROR',
+  AuthorizationError = 'AUTHORIZATION_ERROR',
+  ValidationError = 'VALIDATION_ERROR',
+  NotFoundError = 'NOT_FOUND_ERROR',
   
   // Business Logic Errors
-  DICE_EXPRESSION_ERROR = 'DICE_EXPRESSION_ERROR',
-  CAMPAIGN_ACCESS_ERROR = 'CAMPAIGN_ACCESS_ERROR',
-  CHARACTER_VALIDATION_ERROR = 'CHARACTER_VALIDATION_ERROR',
+  DiceExpressionError = 'DICE_EXPRESSION_ERROR',
+  CampaignAccessError = 'CAMPAIGN_ACCESS_ERROR',
+  CharacterValidationError = 'CHARACTER_VALIDATION_ERROR',
   
   // System Errors
-  STORAGE_ERROR = 'STORAGE_ERROR',
-  CONFIGURATION_ERROR = 'CONFIGURATION_ERROR',
-  UNKNOWN_ERROR = 'UNKNOWN_ERROR'
+  StorageError = 'STORAGE_ERROR',
+  ConfigurationError = 'CONFIGURATION_ERROR',
+  UnknownError = 'UNKNOWN_ERROR'
 }
 
 export enum ErrorSeverity {
@@ -36,7 +36,7 @@ export class AppError extends Error {
 
   constructor(
     message: string,
-    code: ErrorCode = ErrorCode.UNKNOWN_ERROR,
+    code: ErrorCode = ErrorCode.UnknownError,
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
     context?: string,
     originalError?: Error
@@ -58,23 +58,23 @@ export class AppError extends Error {
   
   private generateUserMessage(): string {
     switch (this.code) {
-      case ErrorCode.API_ERROR:
+      case ErrorCode.ApiError:
         return 'Unable to connect to the server. Please try again.';
-      case ErrorCode.NETWORK_ERROR:
+      case ErrorCode.NetworkError:
         return 'Network connection error. Please check your internet connection.';
-      case ErrorCode.AUTHENTICATION_ERROR:
+      case ErrorCode.AuthenticationError:
         return 'Authentication failed. Please log in again.';
-      case ErrorCode.AUTHORIZATION_ERROR:
+      case ErrorCode.AuthorizationError:
         return 'You do not have permission to perform this action.';
-      case ErrorCode.VALIDATION_ERROR:
+      case ErrorCode.ValidationError:
         return 'Please check your input and try again.';
-      case ErrorCode.NOT_FOUND_ERROR:
+      case ErrorCode.NotFoundError:
         return 'The requested resource was not found.';
-      case ErrorCode.DICE_EXPRESSION_ERROR:
+      case ErrorCode.DiceExpressionError:
         return 'Invalid dice expression. Please use format like "1d20" or "2d6+3".';
-      case ErrorCode.CAMPAIGN_ACCESS_ERROR:
+      case ErrorCode.CampaignAccessError:
         return 'Unable to access this campaign. Please check your permissions.';
-      case ErrorCode.STORAGE_ERROR:
+      case ErrorCode.StorageError:
         return 'Unable to save data locally. Please try again.';
       default:
         return 'An unexpected error occurred. Please try again.';
@@ -103,20 +103,20 @@ export class AppError extends Error {
 // Specialized error classes
 export class ApiError extends AppError {
   public readonly status: number;
-  public readonly response?: any;
+  public readonly response?: unknown;
 
   constructor(
     message: string,
     status: number,
-    response?: any,
+    response?: unknown,
     context?: string
   ) {
     const severity = status >= 500 ? ErrorSeverity.HIGH : ErrorSeverity.MEDIUM;
-    const code = status === 401 ? ErrorCode.AUTHENTICATION_ERROR 
-                : status === 403 ? ErrorCode.AUTHORIZATION_ERROR
-                : status === 404 ? ErrorCode.NOT_FOUND_ERROR
-                : status === 422 ? ErrorCode.VALIDATION_ERROR
-                : ErrorCode.API_ERROR;
+    const code = status === 401 ? ErrorCode.AuthenticationError
+                : status === 403 ? ErrorCode.AuthorizationError
+                : status === 404 ? ErrorCode.NotFoundError
+                : status === 422 ? ErrorCode.ValidationError
+                : ErrorCode.ApiError;
     
     super(message, code, severity, context);
     this.name = 'ApiError';
@@ -135,7 +135,7 @@ export class ValidationError extends AppError {
     field?: string,
     context?: string
   ) {
-    super(message, ErrorCode.VALIDATION_ERROR, ErrorSeverity.LOW, context);
+    super(message, ErrorCode.ValidationError, ErrorSeverity.LOW, context);
     this.name = 'ValidationError';
     this.field = field;
     this.validationErrors = validationErrors;
@@ -148,7 +148,7 @@ export class DomainError extends AppError {
     context?: string,
     originalError?: Error
   ) {
-    super(message, ErrorCode.DICE_EXPRESSION_ERROR, ErrorSeverity.MEDIUM, context, originalError);
+    super(message, ErrorCode.DiceExpressionError, ErrorSeverity.MEDIUM, context, originalError);
     this.name = 'DomainError';
   }
 }
@@ -160,7 +160,7 @@ export class ServiceError extends AppError {
     context?: string
   ) {
     const severity = originalError instanceof AppError ? originalError.severity : ErrorSeverity.HIGH;
-    super(message, ErrorCode.API_ERROR, severity, context, originalError);
+    super(message, ErrorCode.ApiError, severity, context, originalError);
     this.name = 'ServiceError';
   }
 }
@@ -176,12 +176,12 @@ export const errorHandler = {
     }
     
     if (error instanceof Error) {
-      return new AppError(error.message, ErrorCode.UNKNOWN_ERROR, ErrorSeverity.MEDIUM, context, error);
+      return new AppError(error.message, ErrorCode.UnknownError, ErrorSeverity.MEDIUM, context, error);
     }
     
     return new AppError(
       typeof error === 'string' ? error : 'Unknown error occurred',
-      ErrorCode.UNKNOWN_ERROR,
+      ErrorCode.UnknownError,
       ErrorSeverity.MEDIUM,
       context
     );
@@ -193,7 +193,7 @@ export const errorHandler = {
   isRetryable(error: AppError): boolean {
     return error instanceof ApiError && 
            error.status >= 500 && 
-           error.code !== ErrorCode.AUTHENTICATION_ERROR;
+           error.code !== ErrorCode.AuthenticationError;
   },
 
   /**
@@ -201,7 +201,7 @@ export const errorHandler = {
    */
   shouldReportToUser(error: AppError): boolean {
     return error.severity !== ErrorSeverity.LOW || 
-           error.code === ErrorCode.VALIDATION_ERROR;
+           error.code === ErrorCode.ValidationError;
   },
 
   /**

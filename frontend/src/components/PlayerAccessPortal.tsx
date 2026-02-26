@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,14 +13,11 @@ import {
   UserPlus, 
   Mail, 
   Key, 
-  Settings, 
   Eye, 
   EyeOff,
   Copy,
   Trash2,
-  RefreshCw,
-  Calendar,
-  Shield
+  RefreshCw
 } from 'lucide-react';
 import { playerAccessApi } from '@/services/api';
 import { useCampaignStore } from '@/stores/campaignStore';
@@ -37,7 +34,7 @@ interface PlayerAccess {
   joined_at?: string;
   last_accessed_at?: string;
   notes: string;
-  accessible_characters?: any[];
+  accessible_characters?: unknown[];
 }
 
 interface PlayerAccessPortalProps {
@@ -57,7 +54,6 @@ export const PlayerAccessPortal: React.FC<PlayerAccessPortalProps> = ({
   const [defaultPermissions, setDefaultPermissions] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
-  const [selectedAccess, setSelectedAccess] = useState<PlayerAccess | null>(null);
   const [showTokens, setShowTokens] = useState<Record<string, boolean>>({});
 
   // New player form
@@ -69,14 +65,7 @@ export const PlayerAccessPortal: React.FC<PlayerAccessPortalProps> = ({
     notes: '',
   });
 
-  useEffect(() => {
-    if (isOpen && campaignId) {
-      loadPlayerAccess();
-      loadPermissions();
-    }
-  }, [isOpen, campaignId]);
-
-  const loadPlayerAccess = async () => {
+  const loadPlayerAccess = useCallback(async () => {
     try {
       setLoading(true);
       const data = await playerAccessApi.list(campaignId);
@@ -86,9 +75,9 @@ export const PlayerAccessPortal: React.FC<PlayerAccessPortalProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [campaignId]);
 
-  const loadPermissions = async () => {
+  const loadPermissions = useCallback(async () => {
     try {
       const data = await playerAccessApi.getPermissions();
       setAvailablePermissions(data.available_permissions);
@@ -97,7 +86,14 @@ export const PlayerAccessPortal: React.FC<PlayerAccessPortalProps> = ({
     } catch (error) {
       console.error('Failed to load permissions:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && campaignId) {
+      loadPlayerAccess();
+      loadPermissions();
+    }
+  }, [isOpen, campaignId, loadPlayerAccess, loadPermissions]);
 
   const handleInvitePlayer = async () => {
     try {
@@ -110,7 +106,7 @@ export const PlayerAccessPortal: React.FC<PlayerAccessPortalProps> = ({
     }
   };
 
-  const handleUpdateAccess = async (accessId: string, updates: any) => {
+  const handleUpdateAccess = async (accessId: string, updates: unknown) => {
     try {
       await playerAccessApi.update(campaignId, accessId, updates);
       loadPlayerAccess();

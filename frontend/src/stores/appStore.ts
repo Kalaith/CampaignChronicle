@@ -208,7 +208,7 @@ export const useAppStatus = () => useAppStore((state) => ({
 }));
 
 // Subscription helpers for side effects
-export const subscribeToCurrentCampaign = (callback: (campaign: any) => void) => {
+export const subscribeToCurrentCampaign = (callback: (campaign: unknown) => void) => {
   return useAppStore.subscribe(
     (state) => state.currentCampaign,
     callback,

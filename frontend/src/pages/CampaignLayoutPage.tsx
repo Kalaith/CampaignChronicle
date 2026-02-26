@@ -49,7 +49,7 @@ const CampaignLayoutPage: React.FC = () => {
     }
   };
 
-  const handleSearchResultClick = (result: any) => {
+  const handleSearchResultClick = (result: unknown) => {
     console.log('Search result clicked:', result);
   };
 

@@ -4,7 +4,6 @@ import React from 'react';
 import { GlobalSearch } from '../GlobalSearch';
 import UserMenu from '../UserMenu';
 import { useAppStore } from '../../stores/appStore';
-import { APP_CONSTANTS } from '../../constants/app';
 import type { HeaderProps } from '../../types/components';
 
 export const AppHeader: React.FC<HeaderProps> = ({ 
@@ -21,7 +20,7 @@ export const AppHeader: React.FC<HeaderProps> = ({
   onSearchResultClick, 
   onNavigateToView 
 }) => {
-  const { sidebarCollapsed, toggleSidebar } = useAppStore();
+  const { toggleSidebar } = useAppStore();
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 relative z-10">
