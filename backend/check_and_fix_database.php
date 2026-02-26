@@ -1,5 +1,19 @@
 <?php
-require_once 'vendor/autoload.php';
+$autoloadCandidates = [
+    __DIR__ . '/../../../vendor/autoload.php',
+    __DIR__ . '/vendor/autoload.php',
+];
+$autoloader = null;
+foreach ($autoloadCandidates as $candidate) {
+    if (file_exists($candidate)) {
+        $autoloader = $candidate;
+        break;
+    }
+}
+if (!$autoloader) {
+    throw new RuntimeException("Composer autoload.php not found for campaign_chronicle backend script.");
+}
+require_once $autoloader;
 
 // Load environment variables
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
