@@ -179,7 +179,10 @@ export const dndCalculations = {
     };
     
     // Calculate total monster XP
-    const totalXP = monsterCRs.reduce((sum, cr) => sum + this.getChallengeRatingXP(cr), 0);
+    const totalXP = monsterCRs.reduce(
+      (sum: number, cr) => sum + Number(this.getChallengeRatingXP(cr)),
+      0
+    );
     
     // Apply encounter multiplier based on number of monsters
     const monsterCount = monsterCRs.length;

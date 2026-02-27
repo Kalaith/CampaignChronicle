@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Label } from '../components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Badge } from '../components/ui/badge';
 import { 
   Users, 
   Scroll, 
@@ -22,7 +22,7 @@ import {
   WifiOff,
   Wifi
 } from 'lucide-react';
-import { campaignApi, characterApi } from '@/services/api';
+import { campaignApi, characterApi } from '../services/api';
 
 interface Character {
   id: string;
@@ -106,11 +106,11 @@ export const MobilePage: React.FC = () => {
       setError(null);
 
       // Load campaign info
-      const campaignData = await campaignApi.get(campaignId!);
+      const campaignData = await campaignApi.get(campaignId!) as Campaign;
       setCampaign(campaignData);
 
       // Load characters
-      const charactersData = await characterApi.list(campaignId!);
+      const charactersData = await characterApi.list(campaignId!) as { data: Character[] };
       setCharacters(charactersData.data || []);
 
     } catch (error) {
@@ -369,8 +369,8 @@ export const MobilePage: React.FC = () => {
                 <Input
                   placeholder="Add quick note..."
                   value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && addQuickNote()}
+                  onChange={(value: string) => setNewNote(value)}
+                  onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && addQuickNote()}
                 />
                 <Button onClick={addQuickNote} disabled={!newNote.trim()}>
                   <Plus className="w-4 h-4" />
@@ -410,8 +410,8 @@ export const MobilePage: React.FC = () => {
                 <Input
                   placeholder="1d20, 2d6+3, etc."
                   value={diceRoll}
-                  onChange={(e) => setDiceRoll(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && rollDice()}
+                  onChange={(value: string) => setDiceRoll(value)}
+                  onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && rollDice()}
                 />
                 <Button onClick={rollDice}>
                   <Dice6 className="w-4 h-4" />
@@ -469,14 +469,14 @@ export const MobilePage: React.FC = () => {
                 <Input
                   placeholder="Name"
                   value={newInitiative.name}
-                  onChange={(e) => setNewInitiative(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(value: string) => setNewInitiative(prev => ({ ...prev, name: value }))}
                   className="flex-1"
                 />
                 <Input
                   type="number"
                   placeholder="Initiative"
                   value={newInitiative.initiative || ''}
-                  onChange={(e) => setNewInitiative(prev => ({ ...prev, initiative: parseInt(e.target.value) || 0 }))}
+                  onChange={(value: string) => setNewInitiative(prev => ({ ...prev, initiative: parseInt(value, 10) || 0 }))}
                   className="w-24"
                 />
                 <Button onClick={addToInitiative} disabled={!newInitiative.name.trim()}>

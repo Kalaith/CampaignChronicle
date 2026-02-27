@@ -3,6 +3,9 @@
 export { CampaignService } from './CampaignService';
 export { DiceService } from './DiceService';
 export { CharacterService } from './CharacterService';
+import { CampaignService } from './CampaignService';
+import { DiceService } from './DiceService';
+import { CharacterService } from './CharacterService';
 
 // Service factory to create service instances with dependency injection
 import { apiClient } from '../repositories/apiClient';

@@ -43,7 +43,7 @@ export class CampaignService {
 
   async createCampaign(data: CreateCampaignRequest): Promise<Campaign> {
     // Validate input
-    ValidationUtils.validateAndThrow(data, ValidationSchemas.campaign);
+    ValidationUtils.validateAndThrow(data as unknown as Record<string, unknown>, ValidationSchemas.campaign);
 
     try {
       serviceLogger.debug('Creating new campaign', { name: data.name });
@@ -62,7 +62,7 @@ export class CampaignService {
     }
 
     // Validate input
-    ValidationUtils.validateAndThrow(data, ValidationSchemas.campaign);
+    ValidationUtils.validateAndThrow(data as unknown as Record<string, unknown>, ValidationSchemas.campaign);
 
     try {
       serviceLogger.debug(`Updating campaign ${id}`, data);
@@ -105,7 +105,7 @@ export class CampaignService {
 
     try {
       serviceLogger.debug(`Searching campaign ${campaignId}`, { query, types });
-      const results = await this.campaignRepository.search(campaignId, query.trim(), types);
+      const results = await this.campaignRepository.search(campaignId, query.trim(), types) as CampaignSearchResult;
       serviceLogger.info(`Search completed: ${results.total || 0} results found`);
       return results;
     } catch (error) {
@@ -153,7 +153,10 @@ export class CampaignService {
 
     try {
       serviceLogger.debug('Importing campaign data', { filename: file.name });
-      const result = await this.campaignRepository.import(file, options);
+      const result = await this.campaignRepository.import(file, options) as {
+        imported_count?: number;
+        campaigns?: Campaign[];
+      };
       serviceLogger.info(`Campaign import completed: ${result.imported_count || 0} campaigns`);
       return result.campaigns || [];
     } catch (error) {
@@ -169,7 +172,7 @@ export class CampaignService {
 
     try {
       serviceLogger.debug(`Fetching analytics for campaign ${campaignId}`);
-      const analytics = await this.campaignRepository.getAnalytics(campaignId);
+      const analytics = await this.campaignRepository.getAnalytics(campaignId) as CampaignAnalytics;
       serviceLogger.info(`Analytics loaded for campaign ${campaignId}`);
       return analytics;
     } catch (error) {

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
+import { Label } from './ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { 
   Smartphone, 
   QrCode, 
@@ -19,8 +19,8 @@ import {
   Volume2,
   VolumeX
 } from 'lucide-react';
-import type { Character } from '@/types';
-import { useCampaignStore } from '@/stores/campaignStore';
+import type { Character } from '../types';
+import { useCampaignStore } from '../stores/campaignStore';
 import { DiceRoller } from './DiceRoller';
 
 interface MobileSession {
@@ -277,8 +277,8 @@ export const MobileCompanionApp: React.FC<MobileCompanionAppProps> = ({
                         <Input
                           placeholder="Add quick note..."
                           value={newNote}
-                          onChange={(e) => setNewNote(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && addQuickNote()}
+                          onChange={(value: string) => setNewNote(value)}
+                          onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && addQuickNote()}
                           className="text-sm"
                         />
                       </div>
@@ -317,14 +317,14 @@ export const MobileCompanionApp: React.FC<MobileCompanionAppProps> = ({
                         <Input
                           placeholder="Name"
                           value={newInitiative.name}
-                          onChange={(e) => setNewInitiative(prev => ({ ...prev, name: e.target.value }))}
+                          onChange={(value: string) => setNewInitiative(prev => ({ ...prev, name: value }))}
                           className="text-sm"
                         />
                         <Input
                           type="number"
                           placeholder="Init"
                           value={newInitiative.initiative || ''}
-                          onChange={(e) => setNewInitiative(prev => ({ ...prev, initiative: parseInt(e.target.value) || 0 }))}
+                          onChange={(value: string) => setNewInitiative(prev => ({ ...prev, initiative: parseInt(value, 10) || 0 }))}
                           className="text-sm w-20"
                         />
                         <Button size="sm" onClick={addToInitiative}>

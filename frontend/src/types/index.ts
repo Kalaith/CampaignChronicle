@@ -28,6 +28,7 @@ export interface Character {
   class?: string;
   level?: number;
   hp?: number;
+  max_hp?: number;
   ac?: number;
   status?: string;
   location?: string;
@@ -43,6 +44,7 @@ export interface CreateCharacterRequest {
   class?: string;
   level?: number;
   hp?: number;
+  max_hp?: number;
   ac?: number;
   status?: string;
   location?: string;
@@ -57,6 +59,7 @@ export interface UpdateCharacterRequest {
   class?: string;
   level?: number;
   hp?: number;
+  max_hp?: number;
   ac?: number;
   status?: string;
   location?: string;
@@ -247,4 +250,81 @@ export interface DiceStatistics {
   distribution: DiceProbability[];
 }
 
+export interface CampaignSearchResult {
+  campaigns: Campaign[];
+  characters: Character[];
+  locations: Location[];
+  items: Item[];
+  notes: Note[];
+  relationships: Relationship[];
+  timelineEvents: TimelineEvent[];
+  quests: Quest[];
+  total: number;
+}
+
+export interface CampaignAnalytics {
+  totalCharacters: number;
+  totalLocations: number;
+  totalItems: number;
+  totalNotes: number;
+  totalQuests: number;
+  activeQuests: number;
+  completedQuests: number;
+  recentActivity: Array<{
+    id: string;
+    type: string;
+    title: string;
+    createdAt: string;
+  }>;
+}
+
+export interface CharacterStatistics {
+  totalCharacters: number;
+  byType: Record<string, number>;
+  averageLevel: number;
+  aliveCharacters: number;
+}
+
+export interface PlayerPermissions {
+  viewCharacters: boolean;
+  viewNotes: boolean;
+  viewMaps: boolean;
+  viewTimeline: boolean;
+  viewQuests: boolean;
+  viewResources: boolean;
+}
+
+export interface PlayerAccess {
+  id: string;
+  campaignId: string;
+  playerName: string;
+  token: string;
+  permissions: PlayerPermissions;
+  isActive: boolean;
+  lastAccessed?: string;
+  createdAt: string;
+}
+
+export interface SharedResource {
+  id: string;
+  campaignId: string;
+  name: string;
+  description?: string;
+  type: 'image' | 'document' | 'audio' | 'video' | 'other';
+  category: 'maps' | 'handouts' | 'references' | 'music' | 'other';
+  filename: string;
+  fileSize: number;
+  mimeType: string;
+  accessLevel: 'dm_only' | 'players' | 'public';
+  tags: string[];
+  createdAt: string;
+  lastModified: string;
+}
+
 export type ViewType = 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline' | 'quests' | 'maps' | 'player-access' | 'resources' | 'mobile-companion' | 'dice-roller';
+
+export type {
+  CampaignResponse,
+  CreateDiceTemplateRequest,
+  UpdateDiceTemplateRequest
+} from './api';

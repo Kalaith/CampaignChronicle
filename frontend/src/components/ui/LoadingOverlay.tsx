@@ -53,11 +53,12 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     gray: 'text-gray-600',
     white: 'text-white',
   };
+  const resolvedColor = (color in colorClasses ? color : 'blue') as keyof typeof colorClasses;
 
   return (
     <div className={`flex flex-col items-center ${className}`}>
       <svg 
-        className={`animate-spin ${sizeClasses[size]} ${colorClasses[color] || colorClasses.blue}`}
+        className={`animate-spin ${sizeClasses[size]} ${colorClasses[resolvedColor]}`}
         fill="none" 
         viewBox="0 0 24 24"
       >

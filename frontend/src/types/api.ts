@@ -58,6 +58,35 @@ export interface CampaignSearchResponse {
   total_results: number;
 }
 
+export interface CampaignSearchResult {
+  campaigns: CampaignResponse[];
+  characters: CharacterResponse[];
+  locations: LocationResponse[];
+  items: ItemResponse[];
+  notes: NoteResponse[];
+  relationships: RelationshipResponse[];
+  timelineEvents: TimelineEventResponse[];
+  quests: QuestResponse[];
+  total: number;
+}
+
+export interface CampaignAnalytics {
+  total_campaigns?: number;
+  total_characters: number;
+  total_locations: number;
+  total_items: number;
+  total_notes: number;
+  total_quests: number;
+  active_quests: number;
+  completed_quests: number;
+  recent_activity: Array<{
+    id: string;
+    type: string;
+    title: string;
+    created_at: string;
+  }>;
+}
+
 // Character API Types
 export interface CharacterResponse {
   id: string;
@@ -306,6 +335,19 @@ export interface CreateQuestRequest {
   tags: string[];
 }
 
+export interface UpdateQuestRequest {
+  title?: string;
+  description?: string;
+  status?: 'active' | 'completed' | 'failed' | 'on-hold';
+  priority?: 'low' | 'medium' | 'high' | 'critical';
+  questGiver?: string;
+  rewards?: string;
+  objectives?: CreateQuestObjectiveRequest[];
+  relatedCharacters?: string[];
+  relatedLocations?: string[];
+  tags?: string[];
+}
+
 export interface CreateQuestObjectiveRequest {
   description: string;
   completed: boolean;
@@ -412,6 +454,14 @@ export interface CreateDiceTemplateRequest {
   tags?: string[];
 }
 
+export interface UpdateDiceTemplateRequest {
+  name?: string;
+  expression?: string;
+  description?: string;
+  category?: 'attack' | 'damage' | 'save' | 'skill' | 'custom';
+  tags?: string[];
+}
+
 export interface DiceStatisticsResponse {
   total_rolls: number;
   average_result: number;
@@ -423,6 +473,26 @@ export interface DiceStatisticsResponse {
   rolls_by_context: Record<string, number>;
   rolls_by_player: Record<string, number>;
   rolls_by_day: Record<string, number>;
+}
+
+export interface DiceStatistics {
+  total_rolls: number;
+  average_result: number;
+  highest_roll: number;
+  lowest_roll: number;
+  critical_hits: number;
+  advantage_rolls: number;
+  disadvantage_rolls: number;
+  rolls_by_context: Record<string, number>;
+  rolls_by_player: Record<string, number>;
+  rolls_by_day: Record<string, number>;
+}
+
+export interface CharacterStatistics {
+  total_characters: number;
+  by_type: Record<string, number>;
+  average_level: number;
+  alive_characters: number;
 }
 
 // Player Access API Types

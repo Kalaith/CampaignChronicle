@@ -91,7 +91,7 @@ export class ApiClient {
 
   private async executeRequest<T>(url: string, config: RequestConfig): Promise<T> {
     const authHeaders = await this.getAuthHeaders();
-    const defaultHeaders = {
+    const defaultHeaders: Record<string, string> & { 'Content-Type'?: string } = {
       'Content-Type': 'application/json',
       ...authHeaders,
     };
@@ -106,7 +106,7 @@ export class ApiClient {
       headers: {
         ...defaultHeaders,
         ...config.headers,
-      },
+      } as HeadersInit,
       body: config.body,
       credentials: 'include',
     };
@@ -190,7 +190,7 @@ export class ApiClient {
       return (apiResponse as ApiResponse<T>).data;
     }
 
-    return responseData;
+    return responseData as T;
   }
 
   private extractErrorMessage(responseData: unknown): string {

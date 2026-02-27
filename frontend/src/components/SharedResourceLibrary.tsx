@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Badge } from './ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { 
   FolderOpen, 
   Upload, 
@@ -21,7 +21,7 @@ import {
   Search,
   X
 } from 'lucide-react';
-import { sharedResourceApi } from '@/services/api';
+import { sharedResourceApi } from '../services/api';
 
 interface SharedResource {
   id: string;
@@ -107,7 +107,7 @@ export const SharedResourceLibrary: React.FC<SharedResourceLibraryProps> = ({
       const activeFilters = Object.fromEntries(
         Object.entries(filters).filter(([_, value]) => value)
       );
-      const data = await sharedResourceApi.list(campaignId, activeFilters);
+      const data = await sharedResourceApi.list(campaignId, activeFilters) as SharedResource[];
       
       // Filter by search query locally
       const filteredData = searchQuery
@@ -128,7 +128,7 @@ export const SharedResourceLibrary: React.FC<SharedResourceLibraryProps> = ({
 
   const loadResourceInfo = async () => {
     try {
-      const data = await sharedResourceApi.getResourceInfo();
+      const data = await sharedResourceApi.getResourceInfo() as ResourceInfo;
       setResourceInfo(data);
     } catch (error) {
       console.error('Failed to load resource info:', error);
@@ -263,7 +263,7 @@ export const SharedResourceLibrary: React.FC<SharedResourceLibraryProps> = ({
               <Input
                 placeholder="Search resources..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(value: string) => setSearchQuery(value)}
                 className="pl-10"
               />
             </div>
@@ -272,7 +272,7 @@ export const SharedResourceLibrary: React.FC<SharedResourceLibraryProps> = ({
             <div className="flex gap-2">
               <Select
                 value={filters.type}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, type: value }))}
+                onValueChange={(value: string) => setFilters(prev => ({ ...prev, type: value }))}
               >
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="Type" />
@@ -287,7 +287,7 @@ export const SharedResourceLibrary: React.FC<SharedResourceLibraryProps> = ({
 
               <Select
                 value={filters.category}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, category: value }))}
+                onValueChange={(value: string) => setFilters(prev => ({ ...prev, category: value }))}
               >
                 <SelectTrigger className="w-36">
                   <SelectValue placeholder="Category" />
@@ -302,7 +302,7 @@ export const SharedResourceLibrary: React.FC<SharedResourceLibraryProps> = ({
 
               <Select
                 value={filters.access_level}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, access_level: value }))}
+                onValueChange={(value: string) => setFilters(prev => ({ ...prev, access_level: value }))}
               >
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="Access" />
@@ -489,7 +489,7 @@ export const SharedResourceLibrary: React.FC<SharedResourceLibraryProps> = ({
                 <Input
                   id="name"
                   value={uploadForm.name}
-                  onChange={(e) => setUploadForm(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(value: string) => setUploadForm(prev => ({ ...prev, name: value }))}
                   placeholder="Resource name"
                 />
               </div>
@@ -508,7 +508,7 @@ export const SharedResourceLibrary: React.FC<SharedResourceLibraryProps> = ({
                   <Label htmlFor="type">Type</Label>
                   <Select
                     value={uploadForm.type}
-                    onValueChange={(value) => setUploadForm(prev => ({ ...prev, type: value }))}
+                    onValueChange={(value: string) => setUploadForm(prev => ({ ...prev, type: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -524,7 +524,7 @@ export const SharedResourceLibrary: React.FC<SharedResourceLibraryProps> = ({
                   <Label htmlFor="category">Category</Label>
                   <Select
                     value={uploadForm.category}
-                    onValueChange={(value) => setUploadForm(prev => ({ ...prev, category: value }))}
+                    onValueChange={(value: string) => setUploadForm(prev => ({ ...prev, category: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -541,7 +541,7 @@ export const SharedResourceLibrary: React.FC<SharedResourceLibraryProps> = ({
                 <Label htmlFor="access_level">Access Level</Label>
                 <Select
                   value={uploadForm.access_level}
-                  onValueChange={(value) => setUploadForm(prev => ({ ...prev, access_level: value }))}
+                  onValueChange={(value: string) => setUploadForm(prev => ({ ...prev, access_level: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -560,7 +560,7 @@ export const SharedResourceLibrary: React.FC<SharedResourceLibraryProps> = ({
                 <Input
                   id="tags"
                   value={uploadForm.tags}
-                  onChange={(e) => setUploadForm(prev => ({ ...prev, tags: e.target.value }))}
+                  onChange={(value: string) => setUploadForm(prev => ({ ...prev, tags: value }))}
                   placeholder="Enter tags separated by commas"
                 />
               </div>

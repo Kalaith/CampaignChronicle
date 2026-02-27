@@ -23,6 +23,7 @@ export const ToastContainer: React.FC = () => {
 // Individual toast component
 const Toast: React.FC<ToastProps & { onClose: () => void }> = ({
   type,
+  title,
   message,
   duration = 5000,
   onClose,
@@ -87,13 +88,12 @@ const Toast: React.FC<ToastProps & { onClose: () => void }> = ({
         </div>
         
         <div className="ml-3 flex-1">
-          <p className="text-sm font-medium">
-            {message}
-          </p>
+          {title && <p className="text-sm font-semibold">{title}</p>}
+          <p className="text-sm font-medium">{message || ''}</p>
           
           {actions.length > 0 && (
             <div className="mt-3 flex space-x-2">
-              {actions.map((action, index) => (
+              {actions.map((action: { label: string; onClick: () => void }, index: number) => (
                 <button
                   key={index}
                   onClick={action.onClick}

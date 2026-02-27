@@ -7,6 +7,7 @@ import type {
   UpdateCharacterRequest,
   CharacterStatistics 
 } from '../types';
+import type { CreateCharacterRequest as ApiCreateCharacterRequest } from '../types/api';
 import { ValidationUtils, ValidationSchemas } from '../utils/validation';
 import { ServiceError } from '../utils/errors';
 import { serviceLogger } from '../utils/logger';
@@ -31,7 +32,8 @@ export class CharacterService {
 
     try {
       serviceLogger.debug(`Fetching characters for campaign ${campaignId}`, filters);
-      const characters = await this.characterRepository.findByCampaign(campaignId, filters);
+      const response = await this.characterRepository.findByCampaign(campaignId, filters);
+      const characters = response.data || [];
       
       serviceLogger.info(`Loaded ${characters.length} characters for campaign ${campaignId}`);
       return characters;
@@ -63,7 +65,7 @@ export class CharacterService {
    */
   async createCharacter(data: CreateCharacterRequest): Promise<Character> {
     // Validate input
-    ValidationUtils.validateAndThrow(data, ValidationSchemas.character);
+    ValidationUtils.validateAndThrow(data as unknown as Record<string, unknown>, ValidationSchemas.character);
 
     // Business validation
     const nameValidation = this.validateCharacterName(data.name);
@@ -73,7 +75,11 @@ export class CharacterService {
 
     try {
       serviceLogger.debug('Creating new character', { name: data.name, type: data.type });
-      const character = await this.characterRepository.create(data);
+      const payload: ApiCreateCharacterRequest = {
+        ...data,
+        tags: data.tags ?? []
+      };
+      const character = await this.characterRepository.create(payload);
       serviceLogger.info(`Character created: ${character.name} (${character.id})`);
       return character;
     } catch (error) {
@@ -91,7 +97,7 @@ export class CharacterService {
     }
 
     // Validate input
-    ValidationUtils.validateAndThrow(data, ValidationSchemas.character);
+    ValidationUtils.validateAndThrow(data as unknown as Record<string, unknown>, ValidationSchemas.character);
 
     // Business validation
     if (data.name) {
@@ -140,7 +146,7 @@ export class CharacterService {
 
     try {
       serviceLogger.debug(`Fetching character statistics for campaign ${campaignId}`);
-      const stats = await this.characterRepository.getStatistics(campaignId);
+      const stats = await this.characterRepository.getStatistics(campaignId) as CharacterStatistics;
       serviceLogger.info(`Character statistics loaded for campaign ${campaignId}`);
       return stats;
     } catch (error) {
@@ -271,7 +277,7 @@ export class CharacterService {
     characters.forEach(char => {
       summary.byType[char.type] = (summary.byType[char.type] || 0) + 1;
       
-      if (char.hp > 0) {
+      if ((char.hp ?? 0) > 0) {
         summary.aliveCharacters++;
       }
 
@@ -299,7 +305,7 @@ export class CharacterService {
    * Business logic: Check if character can perform action
    */
   canCharacterPerformAction(character: Character, action: string): { canPerform: boolean; reason?: string } {
-    if (character.hp <= 0) {
+    if ((character.hp ?? 0) <= 0) {
       return { canPerform: false, reason: 'Character is unconscious or dead' };
     }
 

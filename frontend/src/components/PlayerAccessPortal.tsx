@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
+import { Switch } from './ui/switch';
+import { Badge } from './ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { 
   Users, 
   UserPlus, 
@@ -19,8 +19,8 @@ import {
   Trash2,
   RefreshCw
 } from 'lucide-react';
-import { playerAccessApi } from '@/services/api';
-import { useCampaignStore } from '@/stores/campaignStore';
+import { playerAccessApi } from '../services/api';
+import { useCampaignStore } from '../stores/campaignStore';
 
 interface PlayerAccess {
   id: string;
@@ -68,7 +68,7 @@ export const PlayerAccessPortal: React.FC<PlayerAccessPortalProps> = ({
   const loadPlayerAccess = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await playerAccessApi.list(campaignId);
+      const data = await playerAccessApi.list(campaignId) as PlayerAccess[];
       setPlayerAccess(data);
     } catch (error) {
       console.error('Failed to load player access:', error);
@@ -79,7 +79,10 @@ export const PlayerAccessPortal: React.FC<PlayerAccessPortalProps> = ({
 
   const loadPermissions = useCallback(async () => {
     try {
-      const data = await playerAccessApi.getPermissions();
+      const data = await playerAccessApi.getPermissions() as {
+        available_permissions: Record<string, string>;
+        default_permissions: Record<string, boolean>;
+      };
       setAvailablePermissions(data.available_permissions);
       setDefaultPermissions(data.default_permissions);
       setNewPlayer(prev => ({ ...prev, permissions: { ...data.default_permissions } }));
@@ -393,7 +396,7 @@ export const PlayerAccessPortal: React.FC<PlayerAccessPortalProps> = ({
                 <Input
                   id="player_name"
                   value={newPlayer.player_name}
-                  onChange={(e) => setNewPlayer(prev => ({ ...prev, player_name: e.target.value }))}
+                  onChange={(value: string) => setNewPlayer(prev => ({ ...prev, player_name: value }))}
                   placeholder="Enter player name"
                 />
               </div>
@@ -403,7 +406,7 @@ export const PlayerAccessPortal: React.FC<PlayerAccessPortalProps> = ({
                   id="player_email"
                   type="email"
                   value={newPlayer.player_email}
-                  onChange={(e) => setNewPlayer(prev => ({ ...prev, player_email: e.target.value }))}
+                  onChange={(value: string) => setNewPlayer(prev => ({ ...prev, player_email: value }))}
                   placeholder="Enter player email"
                 />
               </div>

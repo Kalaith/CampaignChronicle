@@ -81,7 +81,15 @@ export const AppHeader: React.FC<HeaderProps> = ({
               timelineEvents={timelineEvents}
               quests={quests}
               maps={maps}
-              onResultClick={onSearchResultClick}
+              onResultClick={(result) =>
+                onSearchResultClick({
+                  id: result.id,
+                  type: result.type,
+                  name: result.title,
+                  description: result.content,
+                  relevance: 1
+                })
+              }
               onNavigateToView={onNavigateToView}
             />
             <UserMenu />

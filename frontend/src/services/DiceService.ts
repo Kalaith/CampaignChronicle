@@ -8,6 +8,7 @@ import type {
   UpdateDiceTemplateRequest,
   DiceStatistics 
 } from '../types';
+import type { CreateDiceRollRequest, DiceStatisticsResponse } from '../types/api';
 import { ValidationUtils, ValidationSchemas } from '../utils/validation';
 import { ServiceError } from '../utils/errors';
 import { serviceLogger } from '../utils/logger';
@@ -45,7 +46,20 @@ export class DiceService {
       const diceRoll = DiceRoll.create(campaignId, expression, options);
       
       // Save to repository
-      const savedRoll = await this.diceRepository.saveDiceRoll(diceRoll.toApiFormat());
+      const savedRoll = await this.diceRepository.createRoll(campaignId, {
+        expression: diceRoll.expression,
+        result: diceRoll.result,
+        individual_rolls: [...diceRoll.individualRolls],
+        modifier: diceRoll.modifier,
+        context: diceRoll.options.context,
+        advantage: diceRoll.options.advantage,
+        disadvantage: diceRoll.options.disadvantage,
+        critical: diceRoll.isCritical(),
+        tags: [],
+        is_private: diceRoll.options.isPrivate,
+        player_id: diceRoll.options.playerId,
+        player_name: diceRoll.options.playerName
+      } satisfies CreateDiceRollRequest);
       
       serviceLogger.info(`Dice rolled: ${expression} = ${diceRoll.result}`, {
         campaignId,
@@ -54,7 +68,7 @@ export class DiceService {
         isCritical: diceRoll.isCritical()
       });
 
-      return DiceRoll.fromApiResponse(savedRoll);
+      return DiceRoll.fromApiResponse(savedRoll as unknown as Record<string, unknown>);
     } catch (error) {
       serviceLogger.error('Failed to roll dice', error);
       throw new ServiceError('Dice roll failed', error as Error, 'DiceService.rollDice');
@@ -82,14 +96,17 @@ export class DiceService {
         playerId: options.playerId
       });
 
-      const rolls = await this.diceRepository.getDiceHistory(campaignId, {
+      const rolls = await this.diceRepository.getRolls(campaignId, {
         limit,
-        offset,
+        includePrivate: options.isPrivate,
         playerId: options.playerId,
-        isPrivate: options.isPrivate
+        context: undefined
       });
 
-      return rolls.map(roll => DiceRoll.fromApiResponse(roll));
+      const skipped = Math.max(offset, 0);
+      return rolls
+        .slice(skipped, skipped + limit)
+        .map((roll) => DiceRoll.fromApiResponse(roll as unknown as Record<string, unknown>));
     } catch (error) {
       serviceLogger.error('Failed to get dice history', error);
       throw new ServiceError('Unable to load dice history', error as Error, 'DiceService.getDiceHistory');
@@ -99,14 +116,14 @@ export class DiceService {
   /**
    * Delete a dice roll
    */
-  async deleteDiceRoll(rollId: string): Promise<void> {
-    if (!rollId) {
+  async deleteDiceRoll(campaignId: string, rollId: string): Promise<void> {
+    if (!campaignId || !rollId) {
       throw new ServiceError('Roll ID is required', undefined, 'DiceService.deleteDiceRoll');
     }
 
     try {
       serviceLogger.debug(`Deleting dice roll ${rollId}`);
-      await this.diceRepository.deleteDiceRoll(rollId);
+      await this.diceRepository.deleteRoll(campaignId, rollId);
       serviceLogger.info(`Dice roll deleted: ${rollId}`);
     } catch (error) {
       serviceLogger.error(`Failed to delete dice roll ${rollId}`, error);
@@ -124,9 +141,15 @@ export class DiceService {
 
     try {
       serviceLogger.debug(`Fetching dice statistics for campaign ${campaignId}`);
-      const stats = await this.diceRepository.getDiceStatistics(campaignId);
+      const stats = await this.diceRepository.getStatistics(campaignId) as DiceStatisticsResponse;
       serviceLogger.info(`Dice statistics loaded for campaign ${campaignId}`);
-      return stats;
+      return {
+        min: stats.lowest_roll,
+        max: stats.highest_roll,
+        average: stats.average_result,
+        mostLikely: stats.highest_roll,
+        distribution: []
+      };
     } catch (error) {
       serviceLogger.error('Failed to get dice statistics', error);
       throw new ServiceError('Unable to load dice statistics', error as Error, 'DiceService.getDiceStatistics');
@@ -136,13 +159,17 @@ export class DiceService {
   /**
    * Create a dice template
    */
-  async createDiceTemplate(data: CreateDiceTemplateRequest): Promise<DiceTemplate> {
+  async createDiceTemplate(campaignId: string, data: CreateDiceTemplateRequest): Promise<DiceTemplate> {
+    if (!campaignId) {
+      throw new ServiceError('Campaign ID is required', undefined, 'DiceService.createDiceTemplate');
+    }
+
     // Validate input
-    ValidationUtils.validateAndThrow(data, ValidationSchemas.diceTemplate);
+    ValidationUtils.validateAndThrow(data as unknown as Record<string, unknown>, ValidationSchemas.diceTemplate);
 
     try {
       serviceLogger.debug('Creating dice template', { name: data.name, expression: data.expression });
-      const template = await this.diceRepository.createTemplate(data);
+      const template = await this.diceRepository.createTemplate(campaignId, data);
       serviceLogger.info(`Dice template created: ${template.name} (${template.id})`);
       return template;
     } catch (error) {
@@ -171,17 +198,17 @@ export class DiceService {
   /**
    * Update a dice template
    */
-  async updateDiceTemplate(id: string, data: UpdateDiceTemplateRequest): Promise<DiceTemplate> {
-    if (!id) {
+  async updateDiceTemplate(campaignId: string, id: string, data: UpdateDiceTemplateRequest): Promise<DiceTemplate> {
+    if (!campaignId || !id) {
       throw new ServiceError('Template ID is required', undefined, 'DiceService.updateDiceTemplate');
     }
 
     // Validate input
-    ValidationUtils.validateAndThrow(data, ValidationSchemas.diceTemplate);
+    ValidationUtils.validateAndThrow(data as unknown as Record<string, unknown>, ValidationSchemas.diceTemplate);
 
     try {
       serviceLogger.debug(`Updating dice template ${id}`, data);
-      const template = await this.diceRepository.updateTemplate(id, data);
+      const template = await this.diceRepository.updateTemplate(campaignId, id, data);
       serviceLogger.info(`Dice template updated: ${template.name} (${template.id})`);
       return template;
     } catch (error) {
@@ -193,14 +220,14 @@ export class DiceService {
   /**
    * Delete a dice template
    */
-  async deleteDiceTemplate(id: string): Promise<void> {
-    if (!id) {
+  async deleteDiceTemplate(campaignId: string, id: string): Promise<void> {
+    if (!campaignId || !id) {
       throw new ServiceError('Template ID is required', undefined, 'DiceService.deleteDiceTemplate');
     }
 
     try {
       serviceLogger.debug(`Deleting dice template ${id}`);
-      await this.diceRepository.deleteTemplate(id);
+      await this.diceRepository.deleteTemplate(campaignId, id);
       serviceLogger.info(`Dice template deleted: ${id}`);
     } catch (error) {
       serviceLogger.error(`Failed to delete dice template ${id}`, error);

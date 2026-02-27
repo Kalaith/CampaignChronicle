@@ -75,14 +75,8 @@ export const DataManagement = ({ isOpen, onClose }: DataManagementProps) => {
       file,
       (data) => {
         try {
-          const dataObj = data as Record<string, unknown>;
-          if (dataObj.type === 'full_backup') {
-            importFullBackup(data);
-            setImportSuccess('Full backup imported successfully!');
-          } else {
-            importCampaign(data);
-            setImportSuccess('Campaign imported successfully!');
-          }
+          importCampaign(data);
+          setImportSuccess('Data imported successfully!');
         } catch {
           setImportError('Failed to import data');
         } finally {

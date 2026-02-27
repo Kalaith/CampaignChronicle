@@ -43,7 +43,7 @@ export interface UIState {
 export interface ToastNotification {
   id: string;
   type: 'success' | 'error' | 'warning' | 'info';
-  title: string;
+  title?: string;
   message?: string;
   duration?: number;
   actions?: Array<{
@@ -201,10 +201,11 @@ export const createUISlice: StateCreator<
 
   addToast: (toast) => {
     const id = crypto.randomUUID();
+    const duration = toast.duration ?? DEFAULT_TOAST_DURATION;
     const newToast: ToastNotification = {
       ...toast,
       id,
-      duration: toast.duration || DEFAULT_TOAST_DURATION,
+      duration,
       createdAt: Date.now(),
     };
 
@@ -213,13 +214,13 @@ export const createUISlice: StateCreator<
     }));
 
     // Auto-remove toast after duration
-    if (newToast.duration > 0) {
+    if (duration > 0) {
       setTimeout(() => {
         get().removeToast(id);
-      }, newToast.duration);
+      }, duration);
     }
 
-    storeLogger.debug(`Toast added: ${toast.type} - ${toast.title}`);
+    storeLogger.debug(`Toast added: ${toast.type} - ${toast.title || toast.message || 'notification'}`);
     return id;
   },
 

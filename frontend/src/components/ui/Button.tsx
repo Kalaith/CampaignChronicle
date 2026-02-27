@@ -23,6 +23,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   const variantClasses = {
     primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
     secondary: 'bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500',
+    outline: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-gray-500',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
     success: 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500',
     warning: 'bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500',
@@ -81,7 +82,7 @@ export const ButtonGroup: React.FC<{
 }> = ({ children, className = '' }) => (
   <div className={`inline-flex rounded-md shadow-sm ${className}`} role="group">
     {React.Children.map(children, (child, index) => {
-      if (React.isValidElement(child)) {
+      if (React.isValidElement<{ className?: string }>(child)) {
         return React.cloneElement(child, {
           className: `${child.props.className || ''} ${
             index === 0 ? 'rounded-r-none' : 

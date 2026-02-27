@@ -34,7 +34,7 @@ export const RelationshipGraph: React.FC<RelationshipGraphProps> = ({
   const [edges, setEdges] = useState<Edge[]>([]);
   const [hoveredNode, setHoveredNode] = useState<Node | null>(null);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | null>(null);
 
   // Initialize nodes and edges
   useEffect(() => {

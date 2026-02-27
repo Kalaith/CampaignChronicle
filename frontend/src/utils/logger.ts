@@ -254,6 +254,7 @@ export const apiLogger = createLogger('API');
 export const uiLogger = createLogger('UI');
 export const diceLogger = createLogger('DICE');
 export const storeLogger = createLogger('STORE');
+export const serviceLogger = createLogger('SERVICE');
 
 // Global error handler
 window.addEventListener('error', (event) => {

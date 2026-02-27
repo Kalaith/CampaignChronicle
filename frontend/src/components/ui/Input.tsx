@@ -1,9 +1,10 @@
 // Input Component - Reusable input with validation and consistent styling
 
-import React, { forwardRef, useState } from 'react';
+import React, { forwardRef, useId, useState } from 'react';
 import type { InputProps } from '../../types/components';
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(({
+  id,
   type = 'text',
   value,
   onChange,
@@ -14,11 +15,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
   required = false,
   maxLength,
   autoFocus = false,
+  onBlur,
+  onFocus,
   className = '',
   testId,
   ...props
 }, ref) => {
   const [focused, setFocused] = useState(false);
+  const generatedId = useId();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange?.(e.target.value);
@@ -33,7 +37,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
     className
   ].filter(Boolean).join(' ');
 
-  const inputId = `input-${Math.random().toString(36).substr(2, 9)}`;
+  const inputId = id || `input-${generatedId}`;
 
   return (
     <div className="space-y-1">
@@ -54,8 +58,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
           type={type}
           value={value}
           onChange={handleChange}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onFocus={() => {
+            setFocused(true);
+            onFocus?.();
+          }}
+          onBlur={() => {
+            setFocused(false);
+            onBlur?.();
+          }}
           placeholder={placeholder}
           disabled={disabled}
           required={required}
@@ -74,7 +84,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
         
         {maxLength && (
           <CharacterCount 
-            current={value?.length || 0} 
+            current={String(value ?? '').length}
             max={maxLength} 
             visible={focused}
           />

@@ -1,5 +1,4 @@
 import type { Campaign, ViewType, Character, Location, Item, Note, Relationship, TimelineEvent, Quest, CampaignMap } from '../types';
-import type { SearchResult } from '../types/components';
 import { GlobalSearch } from './GlobalSearch';
 import UserMenu from './UserMenu';
 
@@ -14,7 +13,7 @@ interface HeaderProps {
   timelineEvents: TimelineEvent[];
   quests: Quest[];
   maps: CampaignMap[];
-  onSearchResultClick: (result: SearchResult) => void;
+  onSearchResultClick: (result: unknown) => void;
   onNavigateToView: (view: string) => void;
 }
 
@@ -127,7 +126,7 @@ interface MainLayoutProps {
   timelineEvents: TimelineEvent[];
   quests: Quest[];
   maps: CampaignMap[];
-  onSearchResultClick: (result: SearchResult) => void;
+  onSearchResultClick: (result: unknown) => void;
   onNavigateToView: (view: string) => void;
 }
 

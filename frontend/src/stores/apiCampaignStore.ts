@@ -1,7 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Campaign, Character, Location, Item, Note, Relationship, TimelineEvent, Quest, CampaignMap } from '../types';
-import { campaignService } from '../services';
+import type { Campaign, Character, Location, Item, Note, Relationship, TimelineEvent, Quest, CampaignMap, ViewType } from '../types';
+import {
+  campaignApi,
+  characterApi,
+  locationApi,
+  itemApi,
+  noteApi,
+  relationshipApi,
+  timelineApi,
+  mapApi,
+} from '../services/api';
 import { errorHandler } from '../utils/errors';
 import { storeLogger } from '../utils/logger';
 
@@ -19,7 +28,7 @@ interface CampaignState {
   maps: CampaignMap[];
   
   // UI State
-  currentView: 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline' | 'quests' | 'maps';
+  currentView: ViewType;
   
   // Loading States
   isLoading: boolean;
@@ -82,12 +91,12 @@ interface CampaignActions {
 
   // Map Management
   loadMaps: (campaignId: string) => Promise<void>;
-  addMap: (map: Omit<CampaignMap, 'id' | 'createdAt' | 'lastModified'>) => Promise<void>;
+  addMap: (map: Omit<CampaignMap, 'id' | 'createdAt' | 'lastModified'> & { imageFile?: File }) => Promise<void>;
   updateMap: (mapId: string, updates: Partial<CampaignMap>) => Promise<void>;
   deleteMap: (mapId: string) => Promise<void>;
 
   // View Management
-  setCurrentView: (view: 'dashboard' | 'characters' | 'locations' | 'items' | 'relationships' | 'notes' | 'timeline' | 'quests' | 'maps') => void;
+  setCurrentView: (view: ViewType) => void;
 
   // Data Loading
   loadCampaignData: (campaignId: string) => Promise<void>;
@@ -112,6 +121,10 @@ const handleStoreError = (error: unknown, context: string, set: (state: Partial<
   set({ error: appError.userMessage, isLoading: false });
 };
 
+const handleApiError = (error: unknown, set: (state: Partial<CampaignState>) => void) => {
+  handleStoreError(error, 'apiCampaignStore', set);
+};
+
 type BackendRecord = Record<string, unknown>;
 
 const asString = (value: unknown, fallback = ''): string =>
@@ -123,11 +136,19 @@ const asNumber = (value: unknown, fallback = 0): number =>
 const asStringArray = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
 
+const transformCampaign = (backendCampaign: BackendRecord): Campaign => ({
+  id: asString(backendCampaign.id),
+  name: asString(backendCampaign.name),
+  description: asString(backendCampaign.description),
+  createdAt: asString(backendCampaign.created_at ?? backendCampaign.createdAt),
+  lastModified: asString(backendCampaign.updated_at ?? backendCampaign.lastModified),
+});
+
 const transformCharacter = (backendChar: BackendRecord): Character => ({
   id: asString(backendChar.id),
   campaignId: asString(backendChar.campaign_id),
   name: asString(backendChar.name),
-  type: (asString(backendChar.type, 'npc') as Character['type']),
+  type: (asString(backendChar.type, 'NPC') as Character['type']),
   race: asString(backendChar.race),
   class: asString(backendChar.class),
   level: asNumber(backendChar.level, 1),
@@ -143,7 +164,7 @@ const transformLocation = (backendLoc: BackendRecord): Location => ({
   id: asString(backendLoc.id),
   campaignId: asString(backendLoc.campaign_id),
   name: asString(backendLoc.name),
-  type: (asString(backendLoc.type, 'city') as Location['type']),
+  type: (asString(backendLoc.type, 'City') as Location['type']),
   description: asString(backendLoc.description),
   parentId: typeof backendLoc.parent_location === 'string' ? backendLoc.parent_location : undefined,
   tags: asStringArray(backendLoc.tags),
@@ -153,15 +174,8 @@ const transformItem = (backendItem: BackendRecord): Item => ({
   id: asString(backendItem.id),
   campaignId: asString(backendItem.campaign_id),
   name: asString(backendItem.name),
-  type: (asString(backendItem.type, 'misc') as Item['type']),
+  type: (asString(backendItem.type, 'Tool') as Item['type']),
   description: asString(backendItem.description),
-  quantity: asNumber(backendItem.quantity, 1),
-  value: asNumber(backendItem.value, 0),
-  weight: asNumber(backendItem.weight, 0),
-  rarity: (asString(backendItem.rarity, 'common') as Item['rarity']),
-  properties: (backendItem.properties && typeof backendItem.properties === 'object'
-    ? backendItem.properties
-    : {}) as Item['properties'],
   owner: typeof backendItem.owner === 'string' ? backendItem.owner : undefined,
   location: typeof backendItem.location === 'string' ? backendItem.location : undefined,
   tags: asStringArray(backendItem.tags),
@@ -204,7 +218,8 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           storeLogger.debug('Loading campaigns');
-          const campaigns = await campaignService.getAllCampaigns();
+          const response = await campaignApi.list();
+          const campaigns = response.data.map((campaign) => transformCampaign(campaign as BackendRecord));
           set({ campaigns, isLoading: false });
           storeLogger.info(`Loaded ${campaigns.length} campaigns`);
         } catch (error) {
@@ -216,10 +231,11 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           storeLogger.debug('Creating campaign', campaignData);
-          const campaign = await campaignService.createCampaign({
+          const createdCampaign = await campaignApi.create({
             name: campaignData.name,
             description: campaignData.description || '',
           });
+          const campaign = transformCampaign(createdCampaign as BackendRecord);
           
           set((state) => ({
             campaigns: [...state.campaigns, campaign],
@@ -258,7 +274,11 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           storeLogger.debug(`Updating campaign ${campaignId}`, updates);
-          const updatedCampaign = await campaignService.updateCampaign(campaignId, updates);
+          const backendCampaign = await campaignApi.update(campaignId, {
+            name: updates.name,
+            description: updates.description,
+          });
+          const updatedCampaign = transformCampaign(backendCampaign as BackendRecord);
           
           set((state) => ({
             campaigns: state.campaigns.map(c => 
@@ -319,7 +339,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
       loadCharacters: async (campaignId) => {
         try {
           const response = await characterApi.list(campaignId);
-          const characters = response.data.map(transformCharacter);
+          const characters = response.data.map((record) => transformCharacter(record as BackendRecord));
           set({ characters });
         } catch (error) {
           // Don't set loading to false here, let loadCampaignData handle it
@@ -334,7 +354,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           const backendChar = await characterApi.create(currentCampaign.id, characterData);
-          const character = transformCharacter(backendChar);
+          const character = transformCharacter(backendChar as BackendRecord);
           
           set((state) => ({
             characters: [...state.characters, character],
@@ -349,7 +369,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           const backendChar = await characterApi.update(characterId, updates);
-          const character = transformCharacter(backendChar);
+          const character = transformCharacter(backendChar as BackendRecord);
           
           set((state) => ({
             characters: state.characters.map(c => 
@@ -382,7 +402,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
       loadLocations: async (campaignId) => {
         try {
           const response = await locationApi.list(campaignId);
-          const locations = response.data.map(transformLocation);
+          const locations = response.data.map((record) => transformLocation(record as BackendRecord));
           set({ locations });
         } catch (error) {
           console.error('Failed to load locations:', error);
@@ -396,7 +416,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           const backendLoc = await locationApi.create(currentCampaign.id, locationData);
-          const location = transformLocation(backendLoc);
+          const location = transformLocation(backendLoc as BackendRecord);
           
           set((state) => ({
             locations: [...state.locations, location],
@@ -411,7 +431,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           const backendLoc = await locationApi.update(locationId, updates);
-          const location = transformLocation(backendLoc);
+          const location = transformLocation(backendLoc as BackendRecord);
           
           set((state) => ({
             locations: state.locations.map(l => 
@@ -441,7 +461,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
       loadItems: async (campaignId) => {
         try {
           const response = await itemApi.list(campaignId);
-          const items = response.data.map(transformItem);
+          const items = response.data.map((record) => transformItem(record as BackendRecord));
           set({ items });
         } catch (error) {
           console.error('Failed to load items:', error);
@@ -455,7 +475,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           const backendItem = await itemApi.create(currentCampaign.id, itemData);
-          const item = transformItem(backendItem);
+          const item = transformItem(backendItem as BackendRecord);
           
           set((state) => ({
             items: [...state.items, item],
@@ -470,7 +490,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           const backendItem = await itemApi.update(itemId, updates);
-          const item = transformItem(backendItem);
+          const item = transformItem(backendItem as BackendRecord);
           
           set((state) => ({
             items: state.items.map(i => 
@@ -500,7 +520,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
       loadNotes: async (campaignId) => {
         try {
           const response = await noteApi.list(campaignId);
-          const notes = response.data.map(transformNote);
+          const notes = response.data.map((record) => transformNote(record as BackendRecord));
           set({ notes });
         } catch (error) {
           console.error('Failed to load notes:', error);
@@ -514,7 +534,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           const backendNote = await noteApi.create(currentCampaign.id, noteData);
-          const note = transformNote(backendNote);
+          const note = transformNote(backendNote as BackendRecord);
           
           set((state) => ({
             notes: [...state.notes, note],
@@ -529,7 +549,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           const backendNote = await noteApi.update(noteId, updates);
-          const note = transformNote(backendNote);
+          const note = transformNote(backendNote as BackendRecord);
           
           set((state) => ({
             notes: state.notes.map(n => 
@@ -559,7 +579,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
       loadRelationships: async (campaignId) => {
         try {
           const response = await relationshipApi.list(campaignId);
-          const relationships = response.data || [];
+          const relationships = (response.data || []) as Relationship[];
           set({ relationships });
         } catch (error) {
           console.error('Failed to load relationships:', error);
@@ -572,7 +592,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
 
         set({ isLoading: true, error: null });
         try {
-          const relationship = await relationshipApi.create(currentCampaign.id, relationshipData);
+          const relationship = await relationshipApi.create(currentCampaign.id, relationshipData) as Relationship;
           set((state) => ({
             relationships: [...state.relationships, relationship],
             isLoading: false,
@@ -585,7 +605,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
       updateRelationship: async (relationshipId, updates) => {
         set({ isLoading: true, error: null });
         try {
-          const relationship = await relationshipApi.update(relationshipId, updates);
+          const relationship = await relationshipApi.update(relationshipId, updates) as Relationship;
           set((state) => ({
             relationships: state.relationships.map(r => 
               r.id === relationshipId ? relationship : r
@@ -614,7 +634,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
       loadTimelineEvents: async (campaignId) => {
         try {
           const response = await timelineApi.list(campaignId);
-          const timelineEvents = response.data || [];
+          const timelineEvents = (response.data || []) as TimelineEvent[];
           set({ timelineEvents });
         } catch (error) {
           console.error('Failed to load timeline events:', error);
@@ -627,7 +647,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
 
         set({ isLoading: true, error: null });
         try {
-          const event = await timelineApi.create(currentCampaign.id, eventData);
+          const event = await timelineApi.create(currentCampaign.id, eventData) as TimelineEvent;
           set((state) => ({
             timelineEvents: [...state.timelineEvents, event],
             isLoading: false,
@@ -640,7 +660,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
       updateTimelineEvent: async (eventId, updates) => {
         set({ isLoading: true, error: null });
         try {
-          const event = await timelineApi.update(eventId, updates);
+          const event = await timelineApi.update(eventId, updates) as TimelineEvent;
           set((state) => ({
             timelineEvents: state.timelineEvents.map(e => 
               e.id === eventId ? event : e
@@ -748,7 +768,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
       loadMaps: async (campaignId) => {
         try {
           const result = await mapApi.list(campaignId);
-          set({ maps: result.data || [] });
+          set({ maps: (result.data || []) as CampaignMap[] });
         } catch (error) {
           console.error('Failed to load maps:', error);
           set({ maps: [] });
@@ -761,8 +781,19 @@ export const useApiCampaignStore = create<CampaignStore>()(
 
         set({ isLoading: true, error: null });
         try {
-          // mapData should include the imageFile for upload
-          const newMap = await mapApi.create(currentCampaign.id, mapData);
+          const newMap = mapData.imageFile
+            ? (await mapApi.create(currentCampaign.id, {
+                name: mapData.name,
+                description: mapData.description,
+                imageFile: mapData.imageFile,
+              })) as CampaignMap
+            : ({
+                ...mapData,
+                id: crypto.randomUUID(),
+                campaignId: currentCampaign.id,
+                createdAt: new Date().toISOString(),
+                lastModified: new Date().toISOString(),
+              } as CampaignMap);
           
           set({
             maps: [...maps, newMap],
@@ -778,7 +809,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
 
         set({ isLoading: true, error: null });
         try {
-          const updatedMap = await mapApi.update(mapId, updates);
+          const updatedMap = await mapApi.update(mapId, updates) as CampaignMap;
           
           const updatedMaps = maps.map(map => 
             map.id === mapId ? updatedMap : map

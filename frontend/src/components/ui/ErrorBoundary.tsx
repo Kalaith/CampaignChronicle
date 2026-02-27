@@ -37,7 +37,7 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log the error
     const appError = errorHandler.normalize(error, 'ErrorBoundary');
-    uiLogger.error('Error boundary caught an error', appError, { errorInfo });
+    uiLogger.error('Error boundary caught an error', { appError, errorInfo });
 
     // Update state with error info
     this.setState({
@@ -98,7 +98,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
 
             {/* Error details in development */}
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <details className="mt-4 p-3 bg-gray-100 rounded text-xs text-gray-700 overflow-auto max-h-32">
                 <summary className="cursor-pointer font-medium">Error Details</summary>
                 <pre className="mt-2 whitespace-pre-wrap">

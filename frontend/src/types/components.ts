@@ -1,9 +1,10 @@
-import type { ReactNode } from 'react';
+import type { KeyboardEventHandler, MouseEventHandler, ReactNode } from 'react';
 
 // Base component props that all components should extend
 export interface BaseComponentProps {
   className?: string;
   'data-testid'?: string;
+  testId?: string;
   children?: ReactNode;
 }
 
@@ -19,25 +20,38 @@ export interface ModalProps extends BaseComponentProps {
 }
 
 export interface ButtonProps extends BaseComponentProps {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success' | 'warning';
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   loading?: boolean;
   type?: 'button' | 'submit' | 'reset';
-  onClick?: () => void;
+  onClick?: MouseEventHandler<HTMLButtonElement>;
+  icon?: ReactNode;
+  fullWidth?: boolean;
+  title?: string;
+  'aria-label'?: string;
 }
 
 export interface InputProps extends BaseComponentProps {
-  type?: 'text' | 'email' | 'password' | 'number' | 'search' | 'url';
+  type?: 'text' | 'email' | 'password' | 'number' | 'search' | 'url' | 'tel';
+  id?: string;
   value?: string | number;
   placeholder?: string;
   disabled?: boolean;
   required?: boolean;
+  readOnly?: boolean;
   error?: string;
   label?: string;
   onChange?: (value: string) => void;
   onBlur?: () => void;
   onFocus?: () => void;
+  onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
+  onKeyPress?: KeyboardEventHandler<HTMLInputElement>;
+  maxLength?: number;
+  autoFocus?: boolean;
+  min?: number;
+  max?: number;
+  step?: number;
 }
 
 export interface SelectProps extends BaseComponentProps {
@@ -117,10 +131,14 @@ export interface BadgeProps extends BaseComponentProps {
 
 export interface ToastProps extends BaseComponentProps {
   type: 'success' | 'error' | 'warning' | 'info';
-  title: string;
+  title?: string;
   message?: string;
   duration?: number;
   onClose?: () => void;
+  actions?: Array<{
+    label: string;
+    onClick: () => void;
+  }>;
 }
 
 export interface DropdownProps extends BaseComponentProps {

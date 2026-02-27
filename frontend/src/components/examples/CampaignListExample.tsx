@@ -220,9 +220,11 @@ const CampaignFormExample: React.FC<CampaignFormProps> = ({
   } = useFormSubmission<CreateCampaignRequest>(
     async (data) => {
       if (campaign?.id) {
-        return campaignService.updateCampaign(campaign.id, data);
+        await campaignService.updateCampaign(campaign.id, data);
+        return;
       } else {
-        return campaignService.createCampaign(data);
+        await campaignService.createCampaign(data);
+        return;
       }
     },
     {

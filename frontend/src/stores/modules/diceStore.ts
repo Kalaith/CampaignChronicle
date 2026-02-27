@@ -110,8 +110,12 @@ export const createDiceSlice: StateCreator<
   deleteRoll: async (rollId) => {
     set({ isLoading: true, error: null });
     try {
+      const campaignId = (get() as DiceSlice & { currentCampaign?: { id: string } }).currentCampaign?.id;
+      if (!campaignId) {
+        throw new Error('Campaign ID is required to delete a dice roll');
+      }
       storeLogger.debug(`Deleting dice roll ${rollId}`);
-      await diceService.deleteDiceRoll(rollId);
+      await diceService.deleteDiceRoll(campaignId, rollId);
       
       set((state) => ({
         rolls: state.rolls.filter(roll => roll.id !== rollId),
@@ -146,8 +150,12 @@ export const createDiceSlice: StateCreator<
   createTemplate: async (data) => {
     set({ isLoading: true, error: null });
     try {
+      const campaignId = (get() as DiceSlice & { currentCampaign?: { id: string } }).currentCampaign?.id;
+      if (!campaignId) {
+        throw new Error('Campaign ID is required to create a template');
+      }
       storeLogger.debug('Creating dice template', data);
-      const template = await diceService.createDiceTemplate(data);
+      const template = await diceService.createDiceTemplate(campaignId, data);
       
       set((state) => ({
         templates: [...state.templates, template],
@@ -164,8 +172,12 @@ export const createDiceSlice: StateCreator<
   deleteTemplate: async (templateId) => {
     set({ isLoading: true, error: null });
     try {
+      const campaignId = (get() as DiceSlice & { currentCampaign?: { id: string } }).currentCampaign?.id;
+      if (!campaignId) {
+        throw new Error('Campaign ID is required to delete a template');
+      }
       storeLogger.debug(`Deleting dice template ${templateId}`);
-      await diceService.deleteDiceTemplate(templateId);
+      await diceService.deleteDiceTemplate(campaignId, templateId);
       
       set((state) => ({
         templates: state.templates.filter(template => template.id !== templateId),

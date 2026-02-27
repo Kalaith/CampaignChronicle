@@ -17,8 +17,9 @@ export class CampaignRepository implements ICampaignRepository {
   async findAll(): Promise<Campaign[]> {
     try {
       apiLogger.debug('Fetching all campaigns');
-      const response = await this.apiClient.get<{ data: CampaignResponse[] }>('/campaigns');
-      return response.data.map(this.mapToDomainModel);
+      const response = await this.apiClient.get<CampaignResponse[] | { data: CampaignResponse[] }>('/campaigns');
+      const campaigns = Array.isArray(response) ? response : response.data;
+      return campaigns.map(this.mapToDomainModel);
     } catch (error) {
       apiLogger.error('Failed to fetch campaigns', error);
       throw new ServiceError('Failed to load campaigns', error as Error, 'CampaignRepository.findAll');

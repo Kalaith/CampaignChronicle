@@ -10,6 +10,8 @@ import type {
   TimelineEvent,
   Quest,
   CampaignMap,
+  MapPin,
+  MapRoute,
   DiceRoll,
   DiceTemplate,
   SharedResource,
@@ -32,6 +34,7 @@ import type {
   CreateTimelineEventRequest,
   UpdateTimelineEventRequest,
   CreateQuestRequest,
+  UpdateQuestRequest,
   CreateMapRequest,
   CreateDiceRollRequest,
   CreateDiceTemplateRequest,
@@ -64,6 +67,7 @@ export interface ICharacterRepository extends BaseRepository<Character, CreateCh
   findByCampaign(campaignId: string, filters?: SearchFilters): Promise<PaginatedResponse<Character>>;
   findByLocation(locationId: string): Promise<Character[]>;
   getRelationships(characterId: string): Promise<Relationship[]>;
+  getStatistics(campaignId: string): Promise<unknown>;
   updateStats(characterId: string, stats: { hp?: number; max_hp?: number; ac?: number }): Promise<Character>;
 }
 

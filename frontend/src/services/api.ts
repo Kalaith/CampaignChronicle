@@ -650,14 +650,15 @@ export const sharedResourceApi = {
 
   // Download resource
   async download(id: string): Promise<Blob> {
+    const authHeaders = await getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/resources/${id}/download`, {
       headers: {
-        'Authorization': `Bearer ${getAuthToken()}`,
+        ...authHeaders,
       },
     });
 
     if (!response.ok) {
-      throw new ApiError('Download failed', response.status, await response.text());
+      throw new ApiError(response.status, `Download failed: ${await response.text()}`);
     }
 
     return response.blob();

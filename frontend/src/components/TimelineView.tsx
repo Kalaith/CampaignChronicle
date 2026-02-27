@@ -391,11 +391,11 @@ export const TimelineView = ({
                     {/* Related Characters and Locations */}
                     {(event.relatedCharacters?.length || event.relatedLocations?.length) && (
                       <div className="space-y-2 mb-3">
-                        {event.relatedCharacters?.length > 0 && (
+                        {(event.relatedCharacters?.length ?? 0) > 0 && (
                           <div className="flex items-center space-x-2">
                             <span className="text-sm font-medium text-gray-600">Characters:</span>
                             <div className="flex flex-wrap gap-1">
-                              {event.relatedCharacters.map(characterId => {
+                              {(event.relatedCharacters ?? []).map(characterId => {
                                 const character = characters.find(c => c.id === characterId);
                                 return character ? (
                                   <span key={characterId} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
@@ -407,11 +407,11 @@ export const TimelineView = ({
                           </div>
                         )}
                         
-                        {event.relatedLocations?.length > 0 && (
+                        {(event.relatedLocations?.length ?? 0) > 0 && (
                           <div className="flex items-center space-x-2">
                             <span className="text-sm font-medium text-gray-600">Locations:</span>
                             <div className="flex flex-wrap gap-1">
-                              {event.relatedLocations.map(locationId => {
+                              {(event.relatedLocations ?? []).map(locationId => {
                                 const location = locations.find(l => l.id === locationId);
                                 return location ? (
                                   <span key={locationId} className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded">

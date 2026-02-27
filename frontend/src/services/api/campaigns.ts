@@ -115,7 +115,7 @@ export class CampaignApi {
       metadata?: Record<string, unknown>;
     }>;
   }> {
-    const params = limit ? { limit } : {};
+    const params = limit !== undefined ? { limit } : undefined;
     return this.client.get<{
       activities: Array<{
         id: string;

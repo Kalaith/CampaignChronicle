@@ -592,11 +592,11 @@ export const QuestsView = ({
                   {/* Related Characters and Locations */}
                   {(quest.relatedCharacters?.length || quest.relatedLocations?.length) && (
                     <div className="space-y-2 mb-3">
-                      {quest.relatedCharacters?.length > 0 && (
+                      {(quest.relatedCharacters?.length ?? 0) > 0 && (
                         <div className="flex items-center space-x-2">
                           <span className="text-sm font-medium text-gray-600">Characters:</span>
                           <div className="flex flex-wrap gap-1">
-                            {quest.relatedCharacters.map(characterId => {
+                            {(quest.relatedCharacters ?? []).map(characterId => {
                               const character = characters.find(c => c.id === characterId);
                               return character ? (
                                 <span key={characterId} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
@@ -608,11 +608,11 @@ export const QuestsView = ({
                         </div>
                       )}
                       
-                      {quest.relatedLocations?.length > 0 && (
+                      {(quest.relatedLocations?.length ?? 0) > 0 && (
                         <div className="flex items-center space-x-2">
                           <span className="text-sm font-medium text-gray-600">Locations:</span>
                           <div className="flex flex-wrap gap-1">
-                            {quest.relatedLocations.map(locationId => {
+                            {(quest.relatedLocations ?? []).map(locationId => {
                               const location = locations.find(l => l.id === locationId);
                               return location ? (
                                 <span key={locationId} className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded">

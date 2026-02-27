@@ -51,8 +51,9 @@ export class AppError extends Error {
     this.userMessage = this.generateUserMessage();
     
     // Maintain proper stack trace
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, AppError);
+    if ('captureStackTrace' in Error) {
+      (Error as ErrorConstructor & { captureStackTrace?: (targetObject: object, constructorOpt?: Function) => void })
+        .captureStackTrace?.(this, AppError);
     }
   }
   
@@ -212,8 +213,11 @@ export const errorHandler = {
       return error.validationErrors;
     }
     
-    if (error instanceof ApiError && error.response?.errors) {
-      return error.response.errors;
+    if (error instanceof ApiError && typeof error.response === 'object' && error.response !== null) {
+      const response = error.response as { errors?: Record<string, string[]> };
+      if (response.errors) {
+        return response.errors;
+      }
     }
     
     return {};
