@@ -52,7 +52,12 @@ export class AppError extends Error {
     
     // Maintain proper stack trace
     if ('captureStackTrace' in Error) {
-      (Error as ErrorConstructor & { captureStackTrace?: (targetObject: object, constructorOpt?: Function) => void })
+      (Error as ErrorConstructor & {
+        captureStackTrace?: (
+          targetObject: object,
+          constructorOpt?: abstract new (...args: never[]) => unknown
+        ) => void
+      })
         .captureStackTrace?.(this, AppError);
     }
   }
