@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Utils\Uuid;
+
 class CombatEncounter extends BaseModel
 {
     protected $table = 'combat_encounters';
@@ -81,7 +83,7 @@ class CombatEncounter extends BaseModel
     public function addCombatant(array $combatantData): string
     {
         $combatants = $this->combatants ?? [];
-        $combatantId = \Ramsey\Uuid\Uuid::uuid4()->toString();
+        $combatantId = Uuid::v4();
         
         $combatant = [
             'id' => $combatantId,
@@ -155,7 +157,7 @@ class CombatEncounter extends BaseModel
     public function addStatusEffect(string $combatantId, array $statusEffectData): ?string
     {
         $combatants = $this->combatants ?? [];
-        $effectId = \Ramsey\Uuid\Uuid::uuid4()->toString();
+        $effectId = Uuid::v4();
         
         foreach ($combatants as $index => $combatant) {
             if ($combatant['id'] === $combatantId) {

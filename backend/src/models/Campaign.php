@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Facades\Schema;
+
 class Campaign extends BaseModel
 {
     protected $table = 'campaigns';
@@ -101,8 +103,8 @@ class Campaign extends BaseModel
             'notes' => $this->notes()->count(),
             'relationships' => $this->relationships()->count(),
             'timeline_events' => $this->timelineEvents()->count(),
-            'maps' => $this->maps()->count(),
-            'quests' => $this->quests()->count(),
+            'maps' => Schema::hasTable('campaign_maps') ? $this->maps()->count() : 0,
+            'quests' => Schema::hasTable('quests') ? $this->quests()->count() : 0,
         ];
     }
 

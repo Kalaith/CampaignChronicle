@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
+use App\Utils\Uuid;
 
 class User extends Model
 {
@@ -13,7 +13,7 @@ class User extends Model
     protected $keyType = 'string';
     
     protected $fillable = [
-        'auth0_id',
+        'webhatch_id',
         'email',
         'display_name',
         'username',
@@ -36,7 +36,7 @@ class User extends Model
 
         static::creating(function ($model) {
             if (empty($model->id)) {
-                $model->id = (string) Str::uuid();
+                $model->id = Uuid::v4();
             }
         });
     }
@@ -46,7 +46,7 @@ class User extends Model
         parent::__construct($attributes);
         
         if (empty($this->id)) {
-            $this->id = (string) Str::uuid();
+            $this->id = Uuid::v4();
         }
     }
 

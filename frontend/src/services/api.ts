@@ -37,7 +37,7 @@ export function setTokenProvider(provider: () => Promise<string>) {
   getAccessToken = provider;
 }
 
-// Get auth headers using Auth0 access token
+// Get auth headers using JWT access token
 async function getAuthHeaders(): Promise<Record<string, string>> {
   if (!getAccessToken) {
     throw new Error('Token provider not set. Make sure auth context is initialized.');
@@ -67,7 +67,6 @@ async function apiRequest<T>(
 
   const config: RequestInit = {
     ...options,
-    credentials: 'include', // Include cookies for Auth0 session
     headers: {
       ...defaultHeaders,
       ...options.headers,

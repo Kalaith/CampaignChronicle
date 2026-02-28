@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Ramsey\Uuid\Uuid;
+use App\Utils\Uuid;
 
 abstract class BaseModel extends Model
 {
@@ -46,7 +46,7 @@ abstract class BaseModel extends Model
         
         // Set UUID if not already set
         if (empty($this->attributes[$this->getKeyName()])) {
-            $this->attributes[$this->getKeyName()] = (string) Uuid::uuid4();
+            $this->attributes[$this->getKeyName()] = Uuid::v4();
         }
     }
 
@@ -56,7 +56,7 @@ abstract class BaseModel extends Model
 
         static::creating(function ($model) {
             if (empty($model->{$model->getKeyName()})) {
-                $model->{$model->getKeyName()} = (string) Uuid::uuid4();
+                $model->{$model->getKeyName()} = Uuid::v4();
             }
         });
     }

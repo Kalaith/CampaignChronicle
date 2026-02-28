@@ -1,12 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
 import { setTokenProvider } from '../services/api';
 
-// Define user type for campaign chronicle
 interface User {
-  id: number;
-  auth0_id: string;
+  id: string;
   email: string;
   display_name: string;
   username: string;
@@ -15,136 +12,203 @@ interface User {
   updated_at: string;
 }
 
-// Define the shape of our auth context
+interface FrontpageStoredUser {
+  id?: number | string;
+  username?: string;
+  display_name?: string;
+  role?: string;
+  email?: string;
+}
+
+interface AuthApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: User | null;
   checkingUserStatus: boolean;
   error: string | null;
-  /**
-   * Forces a re-verification of the authenticated user against the backend.
-   */
   refreshUserInfo: () => Promise<void>;
   loginWithRedirect: () => void;
   logout: () => void;
   getAccessToken: () => Promise<string>;
 }
 
-// Create context with default values
+const FRONTPAGE_AUTH_STORAGE_KEY = 'auth-storage';
+const FRONTPAGE_LOGIN_PATH = '/login';
+
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isLoading: true,
   user: null,
   checkingUserStatus: true,
   error: null,
-  refreshUserInfo: async () => { /* no-op default */ },
-  loginWithRedirect: () => { /* no-op default */ },
-  logout: () => { /* no-op default */ },
-  getAccessToken: async () => { throw new Error('Not implemented'); }
+  refreshUserInfo: async () => undefined,
+  loginWithRedirect: () => undefined,
+  logout: () => undefined,
+  getAccessToken: async () => {
+    throw new Error('Not authenticated');
+  },
 });
 
-// Custom hook for using auth context
 export const useAuth = () => useContext(AuthContext);
 
-// Provider component
+const readFrontpageToken = (): string | null => {
+  const authStorage = localStorage.getItem(FRONTPAGE_AUTH_STORAGE_KEY);
+  if (!authStorage) return null;
+
+  try {
+    const parsed = JSON.parse(authStorage) as {
+      state?: { token?: string | null };
+    };
+    const token = parsed?.state?.token;
+    return typeof token === 'string' && token.trim() !== '' ? token : null;
+  } catch (error) {
+    console.error('Failed to parse frontpage auth-storage token', error);
+    return null;
+  }
+};
+
+const readFrontpageUser = (): FrontpageStoredUser | null => {
+  const authStorage = localStorage.getItem(FRONTPAGE_AUTH_STORAGE_KEY);
+  if (!authStorage) return null;
+
+  try {
+    const parsed = JSON.parse(authStorage) as {
+      state?: { user?: FrontpageStoredUser | null };
+    };
+    return parsed?.state?.user ?? null;
+  } catch (error) {
+    console.error('Failed to parse frontpage auth-storage user', error);
+    return null;
+  }
+};
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const auth0 = useAuth0();
-  const { isAuthenticated, isLoading, user: auth0User, loginWithRedirect, logout: auth0Logout, getAccessTokenSilently } = auth0;
-  
-  // Add state for our extended auth information
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  const [token, setToken] = useState<string | null>(() => readFrontpageToken());
   const [user, setUser] = useState<User | null>(null);
-  const [checkingUserStatus, setCheckingUserStatus] = useState<boolean>(true);
+  const [checkingUserStatus, setCheckingUserStatus] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Set up the token provider for API calls
-  useEffect(() => {
-    setTokenProvider(getAccessTokenSilently);
-  }, [getAccessTokenSilently]);
+  const syncTokenFromFrontpage = useCallback(() => {
+    setToken(readFrontpageToken());
+  }, []);
 
-  /**
-   * Verify user in our database and sync with Auth0 data
-   */
-  const performUserVerification = useCallback(async () => {
-    if (!auth0User) return;
+  const logout = useCallback(() => {
+    // Campaign Chronicle must not clear shared frontpage auth state.
+    window.location.href = FRONTPAGE_LOGIN_PATH;
+  }, []);
+
+  const loginWithRedirect = useCallback(() => {
+    window.location.href = FRONTPAGE_LOGIN_PATH;
+  }, []);
+
+  const getAccessToken = useCallback(async (): Promise<string> => {
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    return token;
+  }, [token]);
+
+  useEffect(() => {
+    setTokenProvider(async () => {
+      if (!token) {
+        throw new Error('No JWT token in session');
+      }
+      return token;
+    });
+  }, [token]);
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === FRONTPAGE_AUTH_STORAGE_KEY) {
+        syncTokenFromFrontpage();
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [syncTokenFromFrontpage]);
+
+  const refreshUserInfo = useCallback(async (): Promise<void> => {
+    if (!apiBaseUrl) {
+      throw new Error('Missing required VITE_API_BASE_URL');
+    }
+
+    if (!token) {
+      setUser(null);
+      setCheckingUserStatus(false);
+      return;
+    }
 
     setCheckingUserStatus(true);
-    
+    setError(null);
+
     try {
-      // Get access token to make authenticated API call
-      const token = await getAccessTokenSilently();
-      
-      // Call our API to verify/create user
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/verify-user`, {
-        method: 'POST',
+      const response = await fetch(`${apiBaseUrl}/auth/current-user`, {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          auth0_id: auth0User.sub,
-          email: auth0User.email,
-          display_name: auth0User.name || auth0User.email,
-          username: auth0User.nickname || auth0User.email?.split('@')[0] || 'user'
-        })
       });
 
-      if (!response.ok) {
-        throw new Error(`API call failed: ${response.status}`);
+      const raw = await response.text();
+      let result: AuthApiResponse<User> | null = null;
+      try {
+        result = raw ? (JSON.parse(raw) as AuthApiResponse<User>) : null;
+      } catch {
+        throw new Error(
+          `Auth validation returned non-JSON response (status ${response.status}): ${raw.slice(0, 220)}`
+        );
       }
 
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        setUser(result.data);
-      } else {
-        throw new Error(result.message || 'User verification failed');
+      if (!result || !response.ok || !result.success || !result.data) {
+        throw new Error(result?.message || `Authentication check failed (${response.status})`);
       }
 
+      const frontpageUser = readFrontpageUser();
+      setUser({
+        ...result.data,
+        username: frontpageUser?.username || result.data.username,
+        display_name:
+          frontpageUser?.display_name ||
+          frontpageUser?.username ||
+          result.data.display_name,
+        email: frontpageUser?.email || result.data.email,
+        role: frontpageUser?.role || result.data.role,
+      });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to verify user';
-      setError(errorMessage);
+      const message = err instanceof Error ? err.message : 'Failed to validate session';
+      setError(message);
+      // Do not clear shared auth-storage or force logout from this app.
     } finally {
       setCheckingUserStatus(false);
     }
-  }, [auth0User, getAccessTokenSilently]);
+  }, [apiBaseUrl, token]);
 
-  // Verify user in our database when they authenticate with Auth0
   useEffect(() => {
-    if (isAuthenticated && auth0User && !isLoading) {
-      performUserVerification();
-    } else if (!isLoading) {
-      setCheckingUserStatus(false);
-      // Clear user data when not authenticated
-      setUser(null);
-    }
-  }, [isAuthenticated, auth0User, isLoading, performUserVerification]);
+    syncTokenFromFrontpage();
+    refreshUserInfo();
+  }, [refreshUserInfo, syncTokenFromFrontpage]);
 
-  const logout = useCallback(() => {
-    setUser(null);
-    setError(null);
-    auth0Logout({ logoutParams: { returnTo: window.location.origin } });
-  }, [auth0Logout]);
-
-  const getAccessToken = useCallback(async (): Promise<string> => {
-    return await getAccessTokenSilently();
-  }, [getAccessTokenSilently]);
-
-  const contextValue: AuthContextType = {
-    isAuthenticated,
-    isLoading: isLoading || checkingUserStatus,
-    user,
-    checkingUserStatus,
-    error,
-    refreshUserInfo: performUserVerification,
-    loginWithRedirect,
-    logout,
-    getAccessToken
-  };
-  
-  return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo<AuthContextType>(
+    () => ({
+      isAuthenticated: Boolean(token && user),
+      isLoading: checkingUserStatus,
+      user,
+      checkingUserStatus,
+      error,
+      refreshUserInfo,
+      loginWithRedirect,
+      logout,
+      getAccessToken,
+    }),
+    [checkingUserStatus, error, getAccessToken, loginWithRedirect, logout, refreshUserInfo, token, user]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

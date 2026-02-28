@@ -1,15 +1,15 @@
 /**
- * UserMenu component - Shows user info and logout option
+ * UserMenu component - Shows user info and frontpage login action
  */
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function UserMenu() {
-  const { user, logout } = useAuth();
+  const { user, loginWithRedirect } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
+  const handleGoToLogin = () => {
+    loginWithRedirect();
     setIsOpen(false);
   };
 
@@ -39,10 +39,10 @@ export default function UserMenu() {
               <div className="text-gray-400">{user.email}</div>
             </div>
             <button
-              onClick={handleLogout}
+              onClick={handleGoToLogin}
               className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
             >
-              Sign Out
+              Go to Frontpage Login
             </button>
           </div>
         </>

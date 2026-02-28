@@ -6,10 +6,22 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
   const env = loadEnv(mode, '.', '')
+  const rawBasePath = env.VITE_BASE_PATH?.trim()
+  if (!rawBasePath) {
+    throw new Error(
+      `Missing required VITE_BASE_PATH for mode "${mode}". Set it in your environment or .env.${mode}.`
+    )
+  }
+  const normalizedBasePath = rawBasePath.startsWith('/')
+    ? rawBasePath
+    : `/${rawBasePath}`
+  const basePath = normalizedBasePath.endsWith('/')
+    ? normalizedBasePath
+    : `${normalizedBasePath}/`
   
   return {
     plugins: [react(), tailwindcss()],
-    base: mode === 'production' ? '/' : (env.VITE_BASE_PATH || '/campaign_chronicle/'),
+    base: basePath,
     resolve: {
       alias: {
         '@': '/src',
@@ -21,8 +33,6 @@ export default defineConfig(({ mode }) => {
           manualChunks: {
             // Vendor chunk for React and related libraries
             vendor: ['react', 'react-dom', 'react-router-dom'],
-            // Auth chunk for authentication libraries
-            auth: ['@auth0/auth0-react'],
             // Chart chunk for chart.js and related libraries
             charts: ['chart.js', 'react-chartjs-2'],
             // Query chunk for TanStack Query

@@ -10,6 +10,12 @@ use Psr\Http\Message\UploadedFileInterface;
 
 class MapController extends BaseController
 {
+    public function __construct()
+    {
+        parent::__construct();
+        CampaignMap::ensureTableExists();
+    }
+
     /**
      * List all maps for a campaign.
      */

@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use App\Utils\Uuid;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
 class CampaignMap extends BaseModel
 {
     protected $table = 'campaign_maps';
@@ -27,6 +31,35 @@ class CampaignMap extends BaseModel
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    /**
+     * Ensure table exists for environments that were bootstrapped before map support.
+     */
+    public static function ensureTableExists(): void
+    {
+        if (Schema::hasTable('campaign_maps')) {
+            return;
+        }
+
+        Schema::create('campaign_maps', function (Blueprint $table) {
+            $table->string('id', 36)->primary();
+            $table->string('user_id', 36);
+            $table->string('campaign_id', 36);
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->text('image_path')->nullable();
+            $table->text('image_url')->nullable();
+            $table->integer('width')->nullable();
+            $table->integer('height')->nullable();
+            $table->json('pins')->nullable();
+            $table->json('routes')->nullable();
+            $table->timestamps();
+
+            $table->index('user_id');
+            $table->index('campaign_id');
+            $table->index(['campaign_id', 'user_id']);
+        });
+    }
 
     /**
      * Get the user that owns the map.
@@ -68,7 +101,7 @@ class CampaignMap extends BaseModel
     public function addPin(array $pinData)
     {
         $pins = $this->pins ?? [];
-        $pinData['id'] = \Ramsey\Uuid\Uuid::uuid4()->toString();
+        $pinData['id'] = Uuid::v4();
         $pins[] = $pinData;
         $this->pins = $pins;
         return $this;
@@ -106,7 +139,7 @@ class CampaignMap extends BaseModel
     public function addRoute(array $routeData)
     {
         $routes = $this->routes ?? [];
-        $routeData['id'] = \Ramsey\Uuid\Uuid::uuid4()->toString();
+        $routeData['id'] = Uuid::v4();
         $routes[] = $routeData;
         $this->routes = $routes;
         return $this;

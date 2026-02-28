@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Utils\Uuid;
+
 class CampaignWeather extends BaseModel
 {
     protected $table = 'campaign_weather';
@@ -248,7 +250,7 @@ class CampaignWeather extends BaseModel
     public function addCalendarEvent(array $eventData): string
     {
         $events = $this->calendar_events ?? [];
-        $eventId = \Ramsey\Uuid\Uuid::uuid4()->toString();
+        $eventId = Uuid::v4();
         
         $event = [
             'id' => $eventId,

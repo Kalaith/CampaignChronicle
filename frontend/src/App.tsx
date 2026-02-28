@@ -25,8 +25,10 @@ const App: React.FC = () => {
     // Navigation will be handled by React Router
   };
 
-  // Get the base path from environment, default to '/campaign_chronicle' for preview
-  const basename = import.meta.env.VITE_BASE_PATH || '/campaign_chronicle';
+  const basename = import.meta.env.VITE_BASE_PATH;
+  if (!basename) {
+    throw new Error('Missing required VITE_BASE_PATH');
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

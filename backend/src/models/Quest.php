@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Utils\Uuid;
+
 class Quest extends BaseModel
 {
     protected $table = 'quests';
@@ -96,7 +98,7 @@ class Quest extends BaseModel
     public function addObjective(string $description): string
     {
         $objectives = $this->objectives ?? [];
-        $objectiveId = \Ramsey\Uuid\Uuid::uuid4()->toString();
+        $objectiveId = Uuid::v4();
         
         $objectives[] = [
             'id' => $objectiveId,

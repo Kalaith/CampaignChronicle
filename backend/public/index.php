@@ -1,8 +1,36 @@
 <?php
 
+/**
+ * Build a class map for the local App\ namespace so we can safely run even when
+ * a fallback global Composer autoloader is used.
+ */
+function buildLocalAppClassMap(string $srcPath): array
+{
+    $classMap = [];
+    $iterator = new \RecursiveIteratorIterator(
+        new \RecursiveDirectoryIterator($srcPath, \FilesystemIterator::SKIP_DOTS)
+    );
+
+    foreach ($iterator as $file) {
+        /** @var \SplFileInfo $file */
+        if ($file->getExtension() !== 'php') {
+            continue;
+        }
+
+        $fullPath = $file->getPathname();
+        $relativePath = substr($fullPath, strlen($srcPath) + 1);
+        $className = 'App\\' . str_replace([DIRECTORY_SEPARATOR, '.php'], ['\\', ''], $relativePath);
+        $classMap[$className] = $fullPath;
+    }
+
+    return $classMap;
+}
+
+$globalAutoload = __DIR__ . '/../../../vendor/autoload.php';
+$localAutoload = __DIR__ . '/../vendor/autoload.php';
 $autoloadCandidates = [
-    __DIR__ . '/../../../vendor/autoload.php',
-    __DIR__ . '/../vendor/autoload.php',
+    $globalAutoload,
+    $localAutoload,
 ];
 $autoloader = null;
 foreach ($autoloadCandidates as $candidate) {
@@ -15,8 +43,17 @@ if (!$autoloader) {
     throw new RuntimeException("Composer autoload.php not found for campaign_chronicle backend.");
 }
 $loader = require $autoloader;
-if (is_object($loader) && method_exists($loader, 'addPsr4')) {
-    $loader->addPsr4('App\\', __DIR__ . '/../src/');
+$projectSrc = realpath(__DIR__ . '/../src') ?: (__DIR__ . '/../src');
+if (is_object($loader)) {
+    if (method_exists($loader, 'addPsr4')) {
+        // Prepend to ensure local App\ classes are resolved before any global mappings.
+        $loader->addPsr4('App\\', rtrim($projectSrc, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR, true);
+    }
+
+    if ($autoloader === $globalAutoload && method_exists($loader, 'addClassMap')) {
+        // Override any stale App\ classmap entries from global classmaps.
+        $loader->addClassMap(buildLocalAppClassMap($projectSrc));
+    }
 }
 
 use Slim\Factory\AppFactory;

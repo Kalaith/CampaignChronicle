@@ -16,7 +16,7 @@ export const CampaignSelection = ({
   onDeleteCampaign,
   isLoading 
 }: CampaignSelectionProps) => {
-  const { user, logout } = useAuth();
+  const { user, loginWithRedirect } = useAuth();
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -32,10 +32,10 @@ export const CampaignSelection = ({
                 Welcome, <span className="font-medium text-gray-900">{user.display_name}</span>
               </span>
               <button
-                onClick={() => logout()}
+                onClick={() => loginWithRedirect()}
                 className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
               >
-                Logout
+                Frontpage Login
               </button>
             </div>
           )}

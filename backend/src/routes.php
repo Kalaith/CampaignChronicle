@@ -17,7 +17,7 @@ use App\Controllers\InitiativeController;
 use App\Controllers\PlayerAccessController;
 use App\Controllers\SharedResourceController;
 use App\Controllers\DiceController;
-use App\Controllers\Auth0Controller;
+use App\Controllers\AuthController;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -37,27 +37,27 @@ return function (App $app) {
     // API routes group with CORS middleware
     $app->group('/api', function (RouteCollectorProxy $group) {
         
-        // Auth0 endpoints
+        // JWT auth endpoints
         $group->group('/auth', function (RouteCollectorProxy $auth) {
-            $auth->post('/verify-user', [Auth0Controller::class, 'verifyUser'])->add(new \App\Middleware\Auth0Middleware());
-            $auth->get('/current-user', [Auth0Controller::class, 'getCurrentUser'])->add(new \App\Middleware\Auth0Middleware());
-            $auth->get('/validate-session', [Auth0Controller::class, 'validateSession'])->add(new \App\Middleware\Auth0Middleware());
+            $auth->post('/login', [AuthController::class, 'login']);
+            $auth->post('/register', [AuthController::class, 'register']);
+            $auth->get('/current-user', [AuthController::class, 'currentUser'])->add(new \App\Middleware\JwtAuthMiddleware());
+            $auth->get('/validate-session', [AuthController::class, 'currentUser'])->add(new \App\Middleware\JwtAuthMiddleware());
             
             // Debug endpoint
             $auth->get('/debug', function (Request $request, Response $response) {
-                $auth0User = $request->getAttribute('auth0_user');
                 $user = $request->getAttribute('user');
+                $claims = $request->getAttribute('jwt_claims');
                 
                 $debug = [
-                    'auth0_user' => $auth0User,
                     'user' => $user,
-                    'has_auth0_user' => $auth0User !== null,
+                    'jwt_claims' => $claims,
                     'has_user' => $user !== null
                 ];
                 
                 $response->getBody()->write(json_encode($debug, JSON_PRETTY_PRINT));
                 return $response->withHeader('Content-Type', 'application/json');
-            })->add(new \App\Middleware\Auth0Middleware());
+            })->add(new \App\Middleware\JwtAuthMiddleware());
         });
         
         // Protected routes (require authentication)
@@ -303,6 +303,9 @@ return function (App $app) {
                 $quests->delete('/{id}/objectives/{objective_id}', [QuestController::class, 'deleteObjective']);
             });
 
+            // Shared resources info endpoint
+            $protected->get('/resources/info', [SharedResourceController::class, 'getResourceInfo']);
+
             $protected->group('/resources', function (RouteCollectorProxy $resources) {
                 $resources->get('/{id}', [SharedResourceController::class, 'show']);
                 $resources->put('/{id}', [SharedResourceController::class, 'update']);
@@ -316,13 +319,10 @@ return function (App $app) {
             // Player access permissions endpoint
             $protected->get('/players/permissions', [PlayerAccessController::class, 'getPermissions']);
 
-            // Shared resources info endpoint
-            $protected->get('/resources/info', [SharedResourceController::class, 'getResourceInfo']);
-
             // Import endpoint (creates new campaign)
             $protected->post('/import', [CampaignController::class, 'import']);
             
-        })->add(new \App\Middleware\Auth0Middleware());
+        })->add(new \App\Middleware\JwtAuthMiddleware());
 
         // Public player portal routes (no authentication required)
         $group->group('/player-portal', function (RouteCollectorProxy $portal) {

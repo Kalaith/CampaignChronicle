@@ -38,16 +38,15 @@ export default function AuthGuard({ children }: AuthGuardProps) {
                 </div>
               )}
               
-              <p className="text-gray-300">You need to be logged in to access Campaign Chronicle.</p>
-              <button 
-                onClick={() => loginWithRedirect()}
+              <p className="text-gray-300">
+                Sign in on Frontpage first. Campaign Chronicle will validate your shared JWT token with backend.
+              </p>
+              <button
+                onClick={loginWithRedirect}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-md transition-colors"
               >
-                Login with Auth0
+                Go to Frontpage Login
               </button>
-              <p className="text-sm text-gray-400">
-                This will use the same login as the frontpage - single sign-on across all WebHatchery apps.
-              </p>
             </div>
           </div>
         </div>
