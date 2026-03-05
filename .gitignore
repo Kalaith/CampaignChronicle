@@ -3,3 +3,5 @@ mcp
 .env
 frontend/.env.production
 frontend/.env.preview
+
+**/.env*
