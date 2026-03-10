@@ -8,7 +8,7 @@ interface AuthGuardProps {
 }
 
 export default function AuthGuard({ children }: AuthGuardProps) {
-  const { user, isAuthenticated, isLoading, loginWithRedirect, error } = useAuth();
+  const { user, isAuthenticated, isLoading, loginWithRedirect, continueAsGuest, getLinkAccountUrl, error } = useAuth();
 
   if (isLoading) {
     return (
@@ -39,14 +39,28 @@ export default function AuthGuard({ children }: AuthGuardProps) {
               )}
               
               <p className="text-gray-300">
-                Sign in on Frontpage first. Campaign Chronicle will validate your shared JWT token with backend.
+                Continue with a guest session or sign in with your WebHatchery account.
               </p>
+              <button
+                onClick={() => {
+                  void continueAsGuest();
+                }}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-6 rounded-md transition-colors"
+              >
+                Continue as Guest
+              </button>
               <button
                 onClick={loginWithRedirect}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-md transition-colors"
               >
                 Go to Frontpage Login
               </button>
+              <a
+                href={getLinkAccountUrl()}
+                className="block text-sm text-blue-300 hover:text-blue-200 underline"
+              >
+                Sign up and link guest progress
+              </a>
             </div>
           </div>
         </div>

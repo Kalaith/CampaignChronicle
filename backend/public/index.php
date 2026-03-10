@@ -26,7 +26,7 @@ function buildLocalAppClassMap(string $srcPath): array
     return $classMap;
 }
 
-$globalAutoload = __DIR__ . '/../../../vendor/autoload.php';
+$globalAutoload = __DIR__ . '/../../../../vendor/autoload.php';
 $localAutoload = __DIR__ . '/../vendor/autoload.php';
 $autoloadCandidates = [
     $globalAutoload,

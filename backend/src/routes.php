@@ -41,8 +41,10 @@ return function (App $app) {
         $group->group('/auth', function (RouteCollectorProxy $auth) {
             $auth->post('/login', [AuthController::class, 'login']);
             $auth->post('/register', [AuthController::class, 'register']);
+            $auth->post('/guest-session', [AuthController::class, 'createGuestSession']);
             $auth->get('/current-user', [AuthController::class, 'currentUser'])->add(new \App\Middleware\JwtAuthMiddleware());
             $auth->get('/validate-session', [AuthController::class, 'currentUser'])->add(new \App\Middleware\JwtAuthMiddleware());
+            $auth->post('/link-guest', [AuthController::class, 'linkGuestAccount'])->add(new \App\Middleware\JwtAuthMiddleware());
             
             // Debug endpoint
             $auth->get('/debug', function (Request $request, Response $response) {

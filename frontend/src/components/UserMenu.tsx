@@ -5,11 +5,16 @@ import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function UserMenu() {
-  const { user, loginWithRedirect } = useAuth();
+  const { user, loginWithRedirect, getLinkAccountUrl, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleGoToLogin = () => {
     loginWithRedirect();
+    setIsOpen(false);
+  };
+
+  const handleLogout = () => {
+    logout();
     setIsOpen(false);
   };
 
@@ -36,13 +41,28 @@ export default function UserMenu() {
           <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-20">
             <div className="px-4 py-2 text-sm text-gray-300 border-b border-gray-700">
               <div className="font-medium">{user.display_name}</div>
-              <div className="text-gray-400">{user.email}</div>
+              <div className="text-gray-400">{user.email || user.username}</div>
+              {user.is_guest && <div className="text-amber-300">Guest session</div>}
             </div>
+            {user.is_guest && (
+              <a
+                href={getLinkAccountUrl()}
+                className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+              >
+                Link to WebHatchery account
+              </a>
+            )}
             <button
               onClick={handleGoToLogin}
               className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
             >
               Go to Frontpage Login
+            </button>
+            <button
+              onClick={handleLogout}
+              className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+            >
+              Sign Out
             </button>
           </div>
         </>
