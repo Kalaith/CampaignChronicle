@@ -12,7 +12,7 @@ class TimelineEventController extends BaseController
     public function index(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -50,7 +50,7 @@ class TimelineEventController extends BaseController
     public function show(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $event = TimelineEvent::find($args['id']);
+            $event = $this->ownedEntity($request, TimelineEvent::class, $args['id']);
             
             if (!$event) {
                 return $this->notFound($response, 'Timeline event not found');
@@ -74,7 +74,7 @@ class TimelineEventController extends BaseController
     public function create(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -98,7 +98,7 @@ class TimelineEventController extends BaseController
     public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $event = TimelineEvent::find($args['id']);
+            $event = $this->ownedEntity($request, TimelineEvent::class, $args['id']);
             if (!$event) {
                 return $this->notFound($response, 'Timeline event not found');
             }
@@ -115,7 +115,7 @@ class TimelineEventController extends BaseController
     public function delete(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $event = TimelineEvent::find($args['id']);
+            $event = $this->ownedEntity($request, TimelineEvent::class, $args['id']);
             if (!$event) {
                 return $this->notFound($response, 'Timeline event not found');
             }
@@ -130,7 +130,7 @@ class TimelineEventController extends BaseController
     public function groupedBySessions(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -145,7 +145,7 @@ class TimelineEventController extends BaseController
     public function statistics(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -160,7 +160,7 @@ class TimelineEventController extends BaseController
     public function activity(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -182,7 +182,7 @@ class TimelineEventController extends BaseController
     public function mentions(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -209,7 +209,7 @@ class TimelineEventController extends BaseController
     public function characterInvolvement(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -230,7 +230,7 @@ class TimelineEventController extends BaseController
     public function locationHistory(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -251,7 +251,7 @@ class TimelineEventController extends BaseController
     public function addRelatedEntity(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $event = TimelineEvent::find($args['id']);
+            $event = $this->ownedEntity($request, TimelineEvent::class, $args['id']);
             if (!$event) {
                 return $this->notFound($response, 'Timeline event not found');
             }

@@ -12,7 +12,7 @@ class LocationController extends BaseController
     public function index(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -35,7 +35,7 @@ class LocationController extends BaseController
     public function show(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $location = Location::with(['parentLocation', 'childLocations', 'items'])->find($args['id']);
+            $location = $this->ownedEntity($request, Location::class, $args['id']);
             
             if (!$location) {
                 return $this->notFound($response, 'Location not found');
@@ -60,7 +60,7 @@ class LocationController extends BaseController
     public function create(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -84,7 +84,7 @@ class LocationController extends BaseController
     public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $location = Location::find($args['id']);
+            $location = $this->ownedEntity($request, Location::class, $args['id']);
             if (!$location) {
                 return $this->notFound($response, 'Location not found');
             }
@@ -101,7 +101,7 @@ class LocationController extends BaseController
     public function delete(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $location = Location::find($args['id']);
+            $location = $this->ownedEntity($request, Location::class, $args['id']);
             if (!$location) {
                 return $this->notFound($response, 'Location not found');
             }
@@ -116,7 +116,7 @@ class LocationController extends BaseController
     public function hierarchy(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -131,7 +131,7 @@ class LocationController extends BaseController
     public function items(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $location = Location::find($args['id']);
+            $location = $this->ownedEntity($request, Location::class, $args['id']);
             if (!$location) {
                 return $this->notFound($response, 'Location not found');
             }

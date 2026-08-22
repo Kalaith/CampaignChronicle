@@ -13,7 +13,7 @@ class RelationshipController extends BaseController
     public function index(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -36,7 +36,7 @@ class RelationshipController extends BaseController
     public function show(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $relationship = Relationship::with(['fromCharacter', 'toCharacter'])->find($args['id']);
+            $relationship = $this->ownedEntity($request, Relationship::class, $args['id']);
             
             if (!$relationship) {
                 return $this->notFound($response, 'Relationship not found');
@@ -51,7 +51,7 @@ class RelationshipController extends BaseController
     public function create(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -87,7 +87,7 @@ class RelationshipController extends BaseController
     public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $relationship = Relationship::find($args['id']);
+            $relationship = $this->ownedEntity($request, Relationship::class, $args['id']);
             if (!$relationship) {
                 return $this->notFound($response, 'Relationship not found');
             }
@@ -104,7 +104,7 @@ class RelationshipController extends BaseController
     public function delete(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $relationship = Relationship::find($args['id']);
+            $relationship = $this->ownedEntity($request, Relationship::class, $args['id']);
             if (!$relationship) {
                 return $this->notFound($response, 'Relationship not found');
             }
@@ -119,7 +119,7 @@ class RelationshipController extends BaseController
     public function network(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -134,7 +134,7 @@ class RelationshipController extends BaseController
     public function statistics(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -175,7 +175,7 @@ class RelationshipController extends BaseController
     public function characterRelationships(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $character = Character::find($args['character_id']);
+            $character = $this->ownedEntity($request, Character::class, $args['character_id']);
             if (!$character) {
                 return $this->notFound($response, 'Character not found');
             }

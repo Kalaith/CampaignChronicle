@@ -2,6 +2,15 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Campaign, Character, Location, Item, Note, Relationship, TimelineEvent, Quest, CampaignMap, ViewType } from '../types';
 import {
+  type BackendRecord,
+  mapCampaignRecord,
+  mapCharacterRecord,
+  mapLocationRecord,
+  mapItemRecord,
+  mapNoteRecord,
+  mapQuestRecord,
+} from '../domain/campaignRecordMappers';
+import {
   campaignApi,
   characterApi,
   locationApi,
@@ -9,6 +18,7 @@ import {
   noteApi,
   relationshipApi,
   timelineApi,
+  questApi,
   mapApi,
 } from '../services/api';
 import { errorHandler } from '../utils/errors';
@@ -125,71 +135,6 @@ const handleApiError = (error: unknown, set: (state: Partial<CampaignState>) => 
   handleStoreError(error, 'apiCampaignStore', set);
 };
 
-type BackendRecord = Record<string, unknown>;
-
-const asString = (value: unknown, fallback = ''): string =>
-  typeof value === 'string' ? value : fallback;
-
-const asNumber = (value: unknown, fallback = 0): number =>
-  typeof value === 'number' ? value : fallback;
-
-const asStringArray = (value: unknown): string[] =>
-  Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
-
-const transformCampaign = (backendCampaign: BackendRecord): Campaign => ({
-  id: asString(backendCampaign.id),
-  name: asString(backendCampaign.name),
-  description: asString(backendCampaign.description),
-  createdAt: asString(backendCampaign.created_at ?? backendCampaign.createdAt),
-  lastModified: asString(backendCampaign.updated_at ?? backendCampaign.lastModified),
-});
-
-const transformCharacter = (backendChar: BackendRecord): Character => ({
-  id: asString(backendChar.id),
-  campaignId: asString(backendChar.campaign_id),
-  name: asString(backendChar.name),
-  type: (asString(backendChar.type, 'NPC') as Character['type']),
-  race: asString(backendChar.race),
-  class: asString(backendChar.class),
-  level: asNumber(backendChar.level, 1),
-  description: asString(backendChar.description),
-  hp: typeof backendChar.hp === 'number' ? backendChar.hp : undefined,
-  ac: typeof backendChar.ac === 'number' ? backendChar.ac : undefined,
-  status: (asString(backendChar.status, 'alive') as Character['status']),
-  location: typeof backendChar.location === 'string' ? backendChar.location : undefined,
-  tags: asStringArray(backendChar.tags),
-});
-
-const transformLocation = (backendLoc: BackendRecord): Location => ({
-  id: asString(backendLoc.id),
-  campaignId: asString(backendLoc.campaign_id),
-  name: asString(backendLoc.name),
-  type: (asString(backendLoc.type, 'City') as Location['type']),
-  description: asString(backendLoc.description),
-  parentId: typeof backendLoc.parent_location === 'string' ? backendLoc.parent_location : undefined,
-  tags: asStringArray(backendLoc.tags),
-});
-
-const transformItem = (backendItem: BackendRecord): Item => ({
-  id: asString(backendItem.id),
-  campaignId: asString(backendItem.campaign_id),
-  name: asString(backendItem.name),
-  type: (asString(backendItem.type, 'Tool') as Item['type']),
-  description: asString(backendItem.description),
-  owner: typeof backendItem.owner === 'string' ? backendItem.owner : undefined,
-  location: typeof backendItem.location === 'string' ? backendItem.location : undefined,
-  tags: asStringArray(backendItem.tags),
-});
-
-const transformNote = (backendNote: BackendRecord): Note => ({
-  id: asString(backendNote.id),
-  campaignId: asString(backendNote.campaign_id),
-  title: asString(backendNote.title),
-  content: asString(backendNote.content),
-  createdAt: asString(backendNote.created_at),
-  lastModified: asString(backendNote.updated_at),
-  tags: asStringArray(backendNote.tags),
-});
 
 export const useApiCampaignStore = create<CampaignStore>()(
   persist(
@@ -219,7 +164,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
         try {
           storeLogger.debug('Loading campaigns');
           const response = await campaignApi.list();
-          const campaigns = response.data.map((campaign) => transformCampaign(campaign as BackendRecord));
+          const campaigns = response.data.map((campaign) => mapCampaignRecord(campaign as BackendRecord));
           set({ campaigns, isLoading: false });
           storeLogger.info(`Loaded ${campaigns.length} campaigns`);
         } catch (error) {
@@ -235,7 +180,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
             name: campaignData.name,
             description: campaignData.description || '',
           });
-          const campaign = transformCampaign(createdCampaign as BackendRecord);
+          const campaign = mapCampaignRecord(createdCampaign as BackendRecord);
           
           set((state) => ({
             campaigns: [...state.campaigns, campaign],
@@ -278,7 +223,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
             name: updates.name,
             description: updates.description,
           });
-          const updatedCampaign = transformCampaign(backendCampaign as BackendRecord);
+          const updatedCampaign = mapCampaignRecord(backendCampaign as BackendRecord);
           
           set((state) => ({
             campaigns: state.campaigns.map(c => 
@@ -339,7 +284,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
       loadCharacters: async (campaignId) => {
         try {
           const response = await characterApi.list(campaignId);
-          const characters = response.data.map((record) => transformCharacter(record as BackendRecord));
+          const characters = response.data.map((record) => mapCharacterRecord(record as BackendRecord));
           set({ characters });
         } catch (error) {
           // Don't set loading to false here, let loadCampaignData handle it
@@ -354,7 +299,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           const backendChar = await characterApi.create(currentCampaign.id, characterData);
-          const character = transformCharacter(backendChar as BackendRecord);
+          const character = mapCharacterRecord(backendChar as BackendRecord);
           
           set((state) => ({
             characters: [...state.characters, character],
@@ -369,7 +314,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           const backendChar = await characterApi.update(characterId, updates);
-          const character = transformCharacter(backendChar as BackendRecord);
+          const character = mapCharacterRecord(backendChar as BackendRecord);
           
           set((state) => ({
             characters: state.characters.map(c => 
@@ -402,7 +347,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
       loadLocations: async (campaignId) => {
         try {
           const response = await locationApi.list(campaignId);
-          const locations = response.data.map((record) => transformLocation(record as BackendRecord));
+          const locations = response.data.map((record) => mapLocationRecord(record as BackendRecord));
           set({ locations });
         } catch (error) {
           console.error('Failed to load locations:', error);
@@ -416,7 +361,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           const backendLoc = await locationApi.create(currentCampaign.id, locationData);
-          const location = transformLocation(backendLoc as BackendRecord);
+          const location = mapLocationRecord(backendLoc as BackendRecord);
           
           set((state) => ({
             locations: [...state.locations, location],
@@ -431,7 +376,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           const backendLoc = await locationApi.update(locationId, updates);
-          const location = transformLocation(backendLoc as BackendRecord);
+          const location = mapLocationRecord(backendLoc as BackendRecord);
           
           set((state) => ({
             locations: state.locations.map(l => 
@@ -461,7 +406,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
       loadItems: async (campaignId) => {
         try {
           const response = await itemApi.list(campaignId);
-          const items = response.data.map((record) => transformItem(record as BackendRecord));
+          const items = response.data.map((record) => mapItemRecord(record as BackendRecord));
           set({ items });
         } catch (error) {
           console.error('Failed to load items:', error);
@@ -475,7 +420,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           const backendItem = await itemApi.create(currentCampaign.id, itemData);
-          const item = transformItem(backendItem as BackendRecord);
+          const item = mapItemRecord(backendItem as BackendRecord);
           
           set((state) => ({
             items: [...state.items, item],
@@ -490,7 +435,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           const backendItem = await itemApi.update(itemId, updates);
-          const item = transformItem(backendItem as BackendRecord);
+          const item = mapItemRecord(backendItem as BackendRecord);
           
           set((state) => ({
             items: state.items.map(i => 
@@ -520,7 +465,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
       loadNotes: async (campaignId) => {
         try {
           const response = await noteApi.list(campaignId);
-          const notes = response.data.map((record) => transformNote(record as BackendRecord));
+          const notes = response.data.map((record) => mapNoteRecord(record as BackendRecord));
           set({ notes });
         } catch (error) {
           console.error('Failed to load notes:', error);
@@ -534,7 +479,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           const backendNote = await noteApi.create(currentCampaign.id, noteData);
-          const note = transformNote(backendNote as BackendRecord);
+          const note = mapNoteRecord(backendNote as BackendRecord);
           
           set((state) => ({
             notes: [...state.notes, note],
@@ -549,7 +494,7 @@ export const useApiCampaignStore = create<CampaignStore>()(
         set({ isLoading: true, error: null });
         try {
           const backendNote = await noteApi.update(noteId, updates);
-          const note = transformNote(backendNote as BackendRecord);
+          const note = mapNoteRecord(backendNote as BackendRecord);
           
           set((state) => ({
             notes: state.notes.map(n => 
@@ -685,16 +630,14 @@ export const useApiCampaignStore = create<CampaignStore>()(
         }
       },
 
-      // Quest Actions (local storage for now)
+      // Quest Actions (server-authoritative)
       loadQuests: async (campaignId) => {
         try {
-          // For now, use local storage until backend quest API is implemented
-          const storedQuests = localStorage.getItem(`quests_${campaignId}`);
-          const quests = storedQuests ? JSON.parse(storedQuests) : [];
+          const response = await questApi.list(campaignId);
+          const quests = response.data.map((record) => mapQuestRecord(record as BackendRecord));
           set({ quests });
         } catch (error) {
-          console.error('Failed to load quests:', error);
-          set({ quests: [] });
+          handleApiError(error, set);
         }
       },
 
@@ -704,16 +647,8 @@ export const useApiCampaignStore = create<CampaignStore>()(
 
         set({ isLoading: true, error: null });
         try {
-          const newQuest = {
-            ...questData,
-            id: crypto.randomUUID(),
-            createdAt: new Date().toISOString(),
-            lastModified: new Date().toISOString(),
-          };
-          
-          const updatedQuests = [...quests, newQuest];
-          localStorage.setItem(`quests_${currentCampaign.id}`, JSON.stringify(updatedQuests));
-          
+          const newQuest = await questApi.create(currentCampaign.id, questData);
+          const updatedQuests = [...quests, mapQuestRecord(newQuest as BackendRecord)];
           set({
             quests: updatedQuests,
             isLoading: false,
@@ -729,14 +664,9 @@ export const useApiCampaignStore = create<CampaignStore>()(
 
         set({ isLoading: true, error: null });
         try {
-          const updatedQuests = quests.map(quest => 
-            quest.id === questId 
-              ? { ...quest, ...updates, lastModified: new Date().toISOString() }
-              : quest
-          );
-          
-          localStorage.setItem(`quests_${currentCampaign.id}`, JSON.stringify(updatedQuests));
-          
+          const updatedQuest = await questApi.update(questId, updates);
+          const transformedQuest = mapQuestRecord(updatedQuest as BackendRecord);
+          const updatedQuests = quests.map(quest => quest.id === questId ? transformedQuest : quest);
           set({
             quests: updatedQuests,
             isLoading: false,
@@ -752,9 +682,8 @@ export const useApiCampaignStore = create<CampaignStore>()(
 
         set({ isLoading: true, error: null });
         try {
+          await questApi.delete(questId);
           const updatedQuests = quests.filter(quest => quest.id !== questId);
-          localStorage.setItem(`quests_${currentCampaign.id}`, JSON.stringify(updatedQuests));
-          
           set({
             quests: updatedQuests,
             isLoading: false,
@@ -889,10 +818,8 @@ export const useApiCampaignStore = create<CampaignStore>()(
     }),
     {
       name: 'campaign-chronicle-api-storage',
-      partialize: (state) => ({
-        currentCampaign: state.currentCampaign,
-        currentView: state.currentView,
-      }),
+      // The API is authoritative; persist only the user's view preference.
+      partialize: (state) => ({ currentView: state.currentView }),
     }
   )
 );

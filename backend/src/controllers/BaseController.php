@@ -2,6 +2,9 @@
 
 namespace App\Controllers;
 
+use App\Models\Campaign;
+use App\Services\CampaignAuthorizationService;
+use Illuminate\Database\Eloquent\Model;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Psr7\Response;
@@ -17,6 +20,23 @@ abstract class BaseController
         return $response
             ->withHeader('Content-Type', 'application/json')
             ->withStatus($status);
+    }
+
+    /**
+     * Legacy controller response helper with the same safe 5xx contract.
+     */
+    protected function jsonResponse(ResponseInterface $response, $data, int $status = 200): ResponseInterface
+    {
+        if ($status >= 500) {
+            error_log(is_string($data) ? $data : json_encode($data));
+            $data = [
+                'success' => false,
+                'error' => 'Internal server error',
+                'message' => 'An unexpected server error occurred.',
+            ];
+        }
+
+        return $this->json($response, $data, $status);
     }
 
     /**
@@ -36,6 +56,11 @@ abstract class BaseController
      */
     protected function error(ResponseInterface $response, string $message, int $status = 400, $errors = null): ResponseInterface
     {
+        if ($status >= 500) {
+            error_log($message);
+            $message = 'An unexpected server error occurred.';
+        }
+
         $errorData = [
             'success' => false,
             'message' => $message,
@@ -109,6 +134,54 @@ abstract class BaseController
     protected function getUserId(ServerRequestInterface $request): ?string
     {
         return $request->getAttribute('user_id');
+    }
+
+    protected function ownedCampaign(ServerRequestInterface $request, string|int $campaignId): ?Campaign
+    {
+        $userId = $this->getUserId($request);
+        if ($userId === null || $userId === '') {
+            return null;
+        }
+
+        return CampaignAuthorizationService::findOwnedCampaign((string) $campaignId, $userId);
+    }
+
+    /**
+     * @param class-string<Model> $modelClass
+     */
+    protected function ownedEntity(ServerRequestInterface $request, string $modelClass, string|int $entityId): ?Model
+    {
+        $userId = $this->getUserId($request);
+        if ($userId === null || $userId === '') {
+            return null;
+        }
+
+        return CampaignAuthorizationService::findOwnedEntity($modelClass, $entityId, $userId);
+    }
+
+    /**
+     * Resolve a child from a nested campaign route. Both IDs are checked in
+     * the same query so a mismatched parent cannot authorize the child.
+     *
+     * @param class-string<Model> $modelClass
+     */
+    protected function ownedEntityInCampaign(
+        ServerRequestInterface $request,
+        string $modelClass,
+        string|int $entityId,
+        string|int $campaignId
+    ): ?Model {
+        $userId = $this->getUserId($request);
+        if ($userId === null || $userId === '') {
+            return null;
+        }
+
+        return CampaignAuthorizationService::findOwnedEntityInCampaign(
+            $modelClass,
+            $entityId,
+            $campaignId,
+            $userId
+        );
     }
 
     /**

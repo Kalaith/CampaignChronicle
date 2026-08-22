@@ -3,11 +3,16 @@
 namespace App\Services;
 
 use App\Models\Campaign;
+use App\Services\CampaignAuthorizationService;
 
 class ExportService
 {
-    public static function exportCampaign(string $campaignId, array $options = []): array
+    public static function exportCampaign(string $campaignId, array $options = [], ?string $userId = null): array
     {
+        if ($userId === null || $userId === '') {
+            throw new \InvalidArgumentException('Authenticated user is required for campaign export');
+        }
+
         $campaign = Campaign::with([
             'characters',
             'locations',
@@ -15,7 +20,7 @@ class ExportService
             'notes',
             'relationships',
             'timelineEvents'
-        ])->find($campaignId);
+        ])->whereKey($campaignId)->where('user_id', $userId)->first();
 
         if (!$campaign) {
             throw new \Exception('Campaign not found');
@@ -184,9 +189,13 @@ class ExportService
         })->toArray();
     }
 
-    public static function exportToCSV(string $campaignId, string $entityType): string
+    public static function exportToCSV(string $campaignId, string $entityType, ?string $userId = null): string
     {
-        $campaign = Campaign::find($campaignId);
+        if ($userId === null || $userId === '') {
+            throw new \InvalidArgumentException('Authenticated user is required for campaign export');
+        }
+
+        $campaign = CampaignAuthorizationService::findOwnedCampaign($campaignId, $userId);
         
         if (!$campaign) {
             throw new \Exception('Campaign not found');

@@ -130,28 +130,18 @@ $app->addRoutingMiddleware();
 $app->addBodyParsingMiddleware();
 
 // Custom error handling
-$errorMiddleware = $app->addErrorMiddleware(true, true, true);
+$errorMiddleware = $app->addErrorMiddleware(false, false, true);
 $errorHandler = $errorMiddleware->getDefaultErrorHandler();
 $errorHandler->forceContentType('application/json');
 
 // Set custom error renderer
 $errorHandler->registerErrorRenderer('application/json', function ($exception, $displayErrorDetails) {
-    $error = [
+    error_log('Campaign Chronicle unhandled exception: ' . $exception->getMessage());
+    return json_encode([
         'success' => false,
-        'message' => $exception->getMessage()
-    ];
-    
-    if ($displayErrorDetails) {
-        $error['details'] = [
-            'type' => get_class($exception),
-            'code' => $exception->getCode(),
-            'file' => $exception->getFile(),
-            'line' => $exception->getLine(),
-            'trace' => $exception->getTraceAsString()
-        ];
-    }
-    
-    return json_encode($error, JSON_PRETTY_PRINT);
+        'message' => 'An unexpected server error occurred.',
+        'error' => 'Internal server error',
+    ], JSON_PRETTY_PRINT);
 });
 
 // Load routes

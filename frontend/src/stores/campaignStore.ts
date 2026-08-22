@@ -393,17 +393,8 @@ export const useCampaignStore = create<CampaignStore>()(
     }),
     {
       name: 'campaign-chronicle-storage',
-      partialize: (state) => ({
-        campaigns: state.campaigns,
-        currentCampaign: state.currentCampaign,
-        characters: state.characters,
-        locations: state.locations,
-        items: state.items,
-        notes: state.notes,
-        relationships: state.relationships,
-        timelineEvents: state.timelineEvents,
-        currentView: state.currentView,
-      }),
+      // Legacy UI compatibility store: never persist server-owned records.
+      partialize: (state) => ({ currentView: state.currentView }),
     }
   )
 );

@@ -37,13 +37,17 @@ export interface AppConfig {
   };
 }
 
-// Load configuration from environment variables with fallbacks
+// Load configuration from explicitly configured environment variables.
 const loadConfig = (): AppConfig => {
   const isDevelopment = import.meta.env.DEV;
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  if (!apiBaseUrl?.trim()) {
+    throw new Error('VITE_API_BASE_URL is required in every mode');
+  }
   
   return {
     api: {
-      baseUrl: import.meta.env.VITE_API_BASE_URL || (isDevelopment ? 'http://localhost:8000' : ''),
+      baseUrl: apiBaseUrl,
       timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 30000,
       retryAttempts: Number(import.meta.env.VITE_API_RETRY_ATTEMPTS) || 3,
     },
@@ -82,8 +86,8 @@ const loadConfig = (): AppConfig => {
 
 // Validate configuration
 const validateConfig = (config: AppConfig): void => {
-  if (!config.api.baseUrl && !config.development.mockApiCalls) {
-    throw new Error('VITE_API_BASE_URL is required in production mode');
+  if (!config.api.baseUrl) {
+    throw new Error('VITE_API_BASE_URL is required in every mode');
   }
   
   if (config.api.timeout < 1000) {

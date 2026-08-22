@@ -1,260 +1,132 @@
-// Base API Client - Core API functionality with proper error handling
-
+import {
+  ApiError as SharedApiError,
+  buildApiUrl as buildSharedApiUrl,
+  createApiClient as createSharedApiClient,
+} from '@webhatchery/api-client';
 import { appConfig } from '../../config/appConfig';
-import { ApiError, errorHandler } from '../../utils/errors';
-import { apiLogger } from '../../utils/logger';
-import type { ApiResponse, ApiErrorResponse } from '../../types/api';
 
-// Global token provider function that will be set by the auth context
-let getAccessToken: (() => Promise<string>) | null = null;
-
-// Set the token provider (called from auth context)
-export function setTokenProvider(provider: () => Promise<string>) {
-  getAccessToken = provider;
-  apiLogger.info('Token provider set for API client');
-}
-
-// Get auth headers using access token
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  if (!getAccessToken) {
-    throw new ApiError('Token provider not set', 401, undefined, 'getAuthHeaders');
-  }
-  
-  try {
-    const token = await getAccessToken();
-    return { 'Authorization': `Bearer ${token}` };
-  } catch (error) {
-    apiLogger.error('Failed to get access token', error);
-    throw new ApiError('Authentication failed', 401, error, 'getAuthHeaders');
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly details?: unknown,
+    public readonly source?: string,
+  ) {
+    super(message);
+    this.name = 'ApiError';
   }
 }
 
-// Core API client class
+type TokenProvider = () => Promise<string>;
+
 export class BaseApiClient {
-  private baseUrl: string;
-  private timeout: number;
-  private retryAttempts: number;
+  private tokenProvider: TokenProvider | undefined;
+  private readonly retryAttempts: number;
+  private readonly client;
 
   constructor(
     baseUrl: string = appConfig.api.baseUrl,
     timeout: number = appConfig.api.timeout,
-    retryAttempts: number = appConfig.api.retryAttempts
+    retryAttempts: number = appConfig.api.retryAttempts,
   ) {
-    this.baseUrl = baseUrl;
-    this.timeout = timeout;
     this.retryAttempts = retryAttempts;
+    this.client = createSharedApiClient({
+      baseURL: baseUrl,
+      timeoutMs: timeout,
+      tokenProvider: async () => {
+        if (!this.tokenProvider) {
+          return null;
+        }
+        try {
+          return await this.tokenProvider();
+        } catch {
+          return null;
+        }
+      },
+    });
   }
 
-  // Generic request method with retry logic
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {},
-    attempt: number = 1
-  ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
-    
-    try {
-      const authHeaders = await getAuthHeaders();
-      const defaultHeaders: Record<string, string> = {
-        'Content-Type': 'application/json',
-        ...authHeaders,
-      };
-
-      // Don't set Content-Type for FormData
-      if (options.body instanceof FormData) {
-        delete defaultHeaders['Content-Type'];
-      }
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-      apiLogger.debug(`API ${options.method || 'GET'} ${url}`, {
-        attempt,
-        headers: { ...defaultHeaders, Authorization: '[REDACTED]' }
-      });
-
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          ...defaultHeaders,
-          ...options.headers,
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      return await this.handleResponse<T>(response, url);
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new ApiError('Request timeout', 408, undefined, 'BaseApiClient.request');
-      }
-
-      // Retry on network errors (but not on 4xx client errors)
-      if (attempt < this.retryAttempts && this.shouldRetry(error)) {
-        apiLogger.warn(`Request failed, retrying attempt ${attempt + 1}/${this.retryAttempts}`, {
-          url,
-          error: error instanceof Error ? error.message : error
-        });
-        
-        // Exponential backoff
-        await this.delay(Math.pow(2, attempt) * 1000);
-        return this.request<T>(endpoint, options, attempt + 1);
-      }
-
-      throw errorHandler.normalize(error, 'BaseApiClient.request');
-    }
+  setTokenProvider(provider: TokenProvider): void {
+    this.tokenProvider = provider;
   }
 
-  // Handle and parse response
-  private async handleResponse<T>(response: Response, url: string): Promise<T> {
-    let responseData: unknown;
-
-    try {
-      const contentType = response.headers.get('content-type');
-      if (contentType?.includes('application/json')) {
-        responseData = await response.json();
-      } else {
-        responseData = await response.text();
+  private async request<T>(endpoint: string, method: string, body?: unknown, query?: Record<string, string | number | boolean>): Promise<T> {
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= this.retryAttempts; attempt += 1) {
+      try {
+        return await this.client.request<T>(endpoint, { method, body, query });
+      } catch (error) {
+        lastError = error;
+        if (error instanceof SharedApiError && (error.status < 500 || error.status === 401)) {
+          throw new ApiError(error.message, error.status, error.payload, 'BaseApiClient.request');
+        }
+        if (attempt < this.retryAttempts) {
+          await new Promise<void>((resolve) => setTimeout(resolve, 2 ** attempt * 1000));
+        }
       }
-    } catch (error) {
-      apiLogger.error('Failed to parse response', { url, error });
-      throw new ApiError('Invalid response format', response.status, undefined, 'BaseApiClient.handleResponse');
     }
 
-    if (!response.ok) {
-      const errorMessage = this.extractErrorMessage(responseData);
-      apiLogger.error(`API Error ${response.status}`, {
-        url,
-        status: response.status,
-        message: errorMessage,
-        response: responseData
-      });
-
-      throw new ApiError(errorMessage, response.status, responseData, 'BaseApiClient.handleResponse');
+    if (lastError instanceof SharedApiError) {
+      throw new ApiError(lastError.message, lastError.status, lastError.payload, 'BaseApiClient.request');
     }
-
-    // Handle wrapped API response format
-    if (responseData && typeof responseData === 'object' && 'success' in responseData) {
-      const apiResponse = responseData as ApiResponse<T> | ApiErrorResponse;
-      
-      if (!apiResponse.success) {
-        throw new ApiError(
-          apiResponse.message,
-          response.status,
-          (apiResponse as ApiErrorResponse).errors,
-          'BaseApiClient.handleResponse'
-        );
-      }
-      
-      return (apiResponse as ApiResponse<T>).data;
-    }
-
-    return responseData as T;
+    throw lastError instanceof Error
+      ? new ApiError(lastError.message, 0, undefined, 'BaseApiClient.request')
+      : new ApiError('The API request failed.', 0, undefined, 'BaseApiClient.request');
   }
 
-  // Extract error message from response
-  private extractErrorMessage(responseData: unknown): string {
-    if (typeof responseData === 'string') {
-      return responseData;
-    }
-
-    if (responseData && typeof responseData === 'object') {
-      const data = responseData as Record<string, unknown>;
-      
-      if (data.message && typeof data.message === 'string') {
-        return data.message;
-      }
-      
-      if (data.error && typeof data.error === 'string') {
-        return data.error;
-      }
-      
-      if (Array.isArray(data.errors)) {
-        return data.errors.join(', ');
-      }
-    }
-
-    return 'An unknown error occurred';
-  }
-
-  // Determine if request should be retried
-  private shouldRetry(error: unknown): boolean {
-    // Don't retry on client errors (4xx) or auth errors
-    if (error instanceof ApiError && (error.status < 500 || error.status === 401)) {
-      return false;
-    }
-    return true;
-  }
-
-  // Delay utility for retries
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  // Public HTTP methods
   async get<T>(endpoint: string, params?: Record<string, string | number | boolean>): Promise<T> {
-    const url = params ? this.buildUrl(endpoint, params) : endpoint;
-    return this.request<T>(url, { method: 'GET' });
+    return this.request<T>(endpoint, 'GET', undefined, params);
   }
 
   async post<T>(endpoint: string, data?: unknown): Promise<T> {
-    const body = data instanceof FormData ? data : JSON.stringify(data);
-    return this.request<T>(endpoint, { method: 'POST', body });
+    return this.request<T>(endpoint, 'POST', data);
   }
 
   async put<T>(endpoint: string, data?: unknown): Promise<T> {
-    const body = data instanceof FormData ? data : JSON.stringify(data);
-    return this.request<T>(endpoint, { method: 'PUT', body });
+    return this.request<T>(endpoint, 'PUT', data);
   }
 
   async patch<T>(endpoint: string, data?: unknown): Promise<T> {
-    const body = data instanceof FormData ? data : JSON.stringify(data);
-    return this.request<T>(endpoint, { method: 'PATCH', body });
+    return this.request<T>(endpoint, 'PATCH', data);
   }
 
   async delete<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, { method: 'DELETE' });
+    return this.request<T>(endpoint, 'DELETE');
   }
 
-  // Utility methods
-  buildUrl(endpoint: string, params: Record<string, string | number | boolean>): string {
-    const searchParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        searchParams.append(key, value.toString());
-      }
-    });
-
-    const queryString = searchParams.toString();
-    return queryString ? `${endpoint}?${queryString}` : endpoint;
+  buildUrl(endpoint: string, params?: Record<string, string | number | boolean>): string {
+    const query = params
+      ? Object.fromEntries(Object.entries(params).map(([key, value]) => [key, String(value)]))
+      : undefined;
+    return buildSharedApiUrl(appConfig.api.baseUrl, '', endpoint) + (query
+      ? `?${new URLSearchParams(query).toString()}`
+      : '');
   }
 
-  // File download helper
   async downloadFile(endpoint: string, _filename?: string): Promise<Blob> {
-    const authHeaders = await getAuthHeaders();
-    
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      headers: authHeaders,
-    });
-
-    if (!response.ok) {
-      throw new ApiError('Download failed', response.status, undefined, 'BaseApiClient.downloadFile');
+    try {
+      return await this.client.request<Blob>(endpoint, { method: 'GET', responseType: 'blob' });
+    } catch (error) {
+      if (error instanceof SharedApiError) {
+        throw new ApiError('Download failed', error.status, error.payload, 'BaseApiClient.downloadFile');
+      }
+      throw error;
     }
-
-    return response.blob();
   }
 
-  // Health check
   async healthCheck(): Promise<{ status: string; timestamp: string }> {
     return this.get<{ status: string; timestamp: string }>('/health');
   }
 }
 
-// Export singleton instance
 export const apiClient = new BaseApiClient();
 
-// Export factory for testing
-export const createApiClient = (baseUrl?: string, timeout?: number, retryAttempts?: number): BaseApiClient => {
-  return new BaseApiClient(baseUrl, timeout, retryAttempts);
-};
+export const createApiClient = (
+  baseUrl?: string,
+  timeout?: number,
+  retryAttempts?: number,
+): BaseApiClient => new BaseApiClient(baseUrl, timeout, retryAttempts);
+
+export function setTokenProvider(provider: TokenProvider | null): void {
+  apiClient.setTokenProvider(provider ?? (async () => ''));
+}

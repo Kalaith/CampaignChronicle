@@ -52,6 +52,34 @@ interface MobileSession {
   };
 }
 
+interface CacheEnvelope<T> {
+  cachedAt: number;
+  data: T;
+}
+
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
+function readFreshCache<T>(key: string): T | null {
+  const raw = localStorage.getItem(key);
+  if (!raw) return null;
+
+  try {
+    const cached = JSON.parse(raw) as CacheEnvelope<T>;
+    if (!Number.isFinite(cached.cachedAt) || Date.now() - cached.cachedAt > CACHE_TTL_MS) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return cached.data;
+  } catch {
+    localStorage.removeItem(key);
+    return null;
+  }
+}
+
+function writeCache<T>(key: string, data: T): void {
+  localStorage.setItem(key, JSON.stringify({ cachedAt: Date.now(), data } satisfies CacheEnvelope<T>));
+}
+
 export const MobilePage: React.FC = () => {
   const { campaignId } = useParams<{ campaignId: string }>();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
@@ -118,11 +146,10 @@ export const MobilePage: React.FC = () => {
       setError('Failed to load campaign data. You may be offline.');
       
       // Try to load from cache
-      const cachedCampaign = localStorage.getItem(`campaign-${campaignId}`);
-      const cachedCharacters = localStorage.getItem(`characters-${campaignId}`);
-      
-      if (cachedCampaign) setCampaign(JSON.parse(cachedCampaign));
-      if (cachedCharacters) setCharacters(JSON.parse(cachedCharacters));
+      const campaignCache = readFreshCache<Campaign>(`campaign-${campaignId}`);
+      const characterCache = readFreshCache<Character[]>(`characters-${campaignId}`);
+      if (campaignCache) setCampaign(campaignCache);
+      if (characterCache) setCharacters(characterCache);
     } finally {
       setLoading(false);
     }
@@ -137,13 +164,13 @@ export const MobilePage: React.FC = () => {
   // Cache data when online
   useEffect(() => {
     if (isOnline && campaign) {
-      localStorage.setItem(`campaign-${campaignId}`, JSON.stringify(campaign));
+      writeCache(`campaign-${campaignId}`, campaign);
     }
   }, [campaign, campaignId, isOnline]);
 
   useEffect(() => {
     if (isOnline && characters.length > 0) {
-      localStorage.setItem(`characters-${campaignId}`, JSON.stringify(characters));
+      writeCache(`characters-${campaignId}`, characters);
     }
   }, [characters, campaignId, isOnline]);
 

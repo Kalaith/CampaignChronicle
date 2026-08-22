@@ -1,4 +1,5 @@
 import type { Campaign, Character, Location, Item, Note, Relationship } from '../types';
+import { useApiCampaignStore } from '../stores/apiCampaignStore';
 
 export interface CampaignData {
   campaign: Campaign;
@@ -46,14 +47,22 @@ export const exportCampaignData = (
 
 export const exportAllData = (): void => {
   try {
-    const storageData = localStorage.getItem('campaign-chronicle-storage');
-    if (!storageData) {
+    const state = useApiCampaignStore.getState();
+    if (state.campaigns.length === 0) {
       throw new Error('No data found to export');
     }
 
-    const data = JSON.parse(storageData);
     const exportData = {
-      ...data.state,
+      campaigns: state.campaigns,
+      currentCampaign: state.currentCampaign,
+      characters: state.characters,
+      locations: state.locations,
+      items: state.items,
+      notes: state.notes,
+      relationships: state.relationships,
+      timelineEvents: state.timelineEvents,
+      quests: state.quests,
+      maps: state.maps,
       exportedAt: new Date().toISOString(),
       version: '1.0.0',
       type: 'full_backup',

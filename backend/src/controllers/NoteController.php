@@ -12,7 +12,7 @@ class NoteController extends BaseController
     public function index(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -35,7 +35,7 @@ class NoteController extends BaseController
     public function show(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $note = Note::find($args['id']);
+            $note = $this->ownedEntity($request, Note::class, $args['id']);
             
             if (!$note) {
                 return $this->notFound($response, 'Note not found');
@@ -50,7 +50,7 @@ class NoteController extends BaseController
     public function create(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -74,7 +74,7 @@ class NoteController extends BaseController
     public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $note = Note::find($args['id']);
+            $note = $this->ownedEntity($request, Note::class, $args['id']);
             if (!$note) {
                 return $this->notFound($response, 'Note not found');
             }
@@ -91,7 +91,7 @@ class NoteController extends BaseController
     public function delete(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $note = Note::find($args['id']);
+            $note = $this->ownedEntity($request, Note::class, $args['id']);
             if (!$note) {
                 return $this->notFound($response, 'Note not found');
             }
@@ -106,7 +106,7 @@ class NoteController extends BaseController
     public function search(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -133,7 +133,7 @@ class NoteController extends BaseController
     public function statistics(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -148,7 +148,7 @@ class NoteController extends BaseController
     public function references(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $note = Note::find($args['id']);
+            $note = $this->ownedEntity($request, Note::class, $args['id']);
             if (!$note) {
                 return $this->notFound($response, 'Note not found');
             }

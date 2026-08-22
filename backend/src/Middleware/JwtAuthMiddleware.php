@@ -3,6 +3,7 @@
 namespace App\Middleware;
 
 use App\Models\User;
+use App\Services\CampaignAuthorizationService;
 use Firebase\JWT\BeforeValidException;
 use Firebase\JWT\ExpiredException;
 use Firebase\JWT\JWT;
@@ -49,12 +50,7 @@ class JwtAuthMiddleware implements MiddlewareInterface
             return $this->createUnauthorizedResponse('Token is not valid yet');
         } catch (\Throwable $e) {
             error_log('JWT Middleware Error: ' . $e->getMessage());
-            $isDebug = filter_var($_ENV['APP_DEBUG'] ?? 'false', FILTER_VALIDATE_BOOLEAN);
-            $message = 'Token validation failed';
-            if ($isDebug) {
-                $message .= ': ' . $e->getMessage();
-            }
-            return $this->createUnauthorizedResponse($message);
+            return $this->createUnauthorizedResponse('Token validation failed');
         }
 
         $resolvedUserData = null;
@@ -86,6 +82,10 @@ class JwtAuthMiddleware implements MiddlewareInterface
             ->withAttribute('jwt_claims', $claims)
             ->withAttribute('user', $resolvedUserData)
             ->withAttribute('user_id', $resolvedUserId);
+
+        if (!CampaignAuthorizationService::authorizesPath($request->getUri()->getPath(), $resolvedUserId)) {
+            return $this->createNotFoundResponse();
+        }
 
         return $handler->handle($request);
     }
@@ -285,6 +285,20 @@ class JwtAuthMiddleware implements MiddlewareInterface
         return $response
             ->withHeader('Content-Type', 'application/json')
             ->withStatus(401);
+    }
+
+    private function createNotFoundResponse(): Response
+    {
+        $response = new \Slim\Psr7\Response();
+        $response->getBody()->write(json_encode([
+            'success' => false,
+            'message' => 'Resource not found',
+            'error' => 'Resource not found',
+        ]));
+
+        return $response
+            ->withHeader('Content-Type', 'application/json')
+            ->withStatus(404);
     }
 
     private function requiredLoginUrl(): string

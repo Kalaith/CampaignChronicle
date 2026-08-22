@@ -1,11 +1,17 @@
 ## Campaign Chronicle
 
+> Canonical frontend: `frontend/` (React/Vite). The root `index.html`,
+> `app.js`, and `style.css` are retained as a compatibility archive only and
+> are not part of the published product. They are owned by the Campaign
+> Chronicle maintainer and scheduled for deletion after the compatibility
+> review on **2026-12-31**. New features and fixes must target the React app.
+
 D&D Campaign Companion — a small React + TypeScript frontend built with Vite to help manage campaigns, characters, locations, items, notes and relationships.
 
 ### Quick overview
 
 - Frontend: `frontend/` — React + TypeScript + Vite app
-- Static assets and simple root files: `index.html`, `style.css`, `app.js`
+- Archived compatibility files: `index.html`, `style.css`, `app.js`
 
 ### Prerequisites
 
@@ -20,9 +26,10 @@ On Windows PowerShell, run commands from the project root or the `frontend` fold
 
    cd frontend
 
-2. Install dependencies:
+2. Install dependencies from the monorepo root:
 
-   npm install
+   cd D:\WebHatchery
+   npm ci
 
 ### Development
 
@@ -52,7 +59,8 @@ From the project root or `frontend/` run:
 
 ### Publishing / Deployment notes
 
-This repository contains a `publish.ps1` script in the project root, but that script currently references a different project path (`anime_prompt_gen`) and deploy destinations. Before using it, review and adapt the script to match this repository's paths and desired deployment targets.
+The root compatibility files are not published. Use the React build and the
+project-root `publish.ps1` script; it publishes only the canonical frontend.
 
 Simple manual deployment flow:
 
@@ -74,7 +82,7 @@ Example PowerShell copy (adapt paths to your environment):
 
 ### Troubleshooting
 
-- If `npm install` fails, ensure your Node version is compatible and you have network access to the npm registry.
+- If the root `npm ci` fails, ensure your Node version is compatible and you have network access to the npm registry.
 - If TypeScript build errors occur during `npm run build`, run `npm run dev` to reproduce and inspect the console for file/typing problems.
 - If preview ports are in use, set the Vite port via `--port` or in `vite.config.ts`.
 

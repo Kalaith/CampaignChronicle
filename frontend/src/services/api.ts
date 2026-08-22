@@ -1,4 +1,9 @@
+import { ApiError as SharedApiError, createApiClient } from '@webhatchery/api-client';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+if (!API_BASE_URL?.trim()) {
+  throw new Error('VITE_API_BASE_URL is required.');
+}
 
 // Base API response structure
 interface ApiResponse<T> {
@@ -32,24 +37,20 @@ class ApiError extends Error {
 // Global token provider function that will be set by the auth context
 let getAccessToken: (() => Promise<string>) | null = null;
 
+const sharedApiClient = createApiClient({
+  baseURL: API_BASE_URL,
+  preserveEnvelope: true,
+  tokenProvider: async () => {
+    if (!getAccessToken) {
+      throw new Error('Token provider not set. Make sure auth context is initialized.');
+    }
+    return getAccessToken();
+  },
+});
+
 // Set the token provider (called from auth context)
 export function setTokenProvider(provider: () => Promise<string>) {
   getAccessToken = provider;
-}
-
-// Get auth headers using JWT access token
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  if (!getAccessToken) {
-    throw new Error('Token provider not set. Make sure auth context is initialized.');
-  }
-  
-  try {
-    const token = await getAccessToken();
-    return { 'Authorization': `Bearer ${token}` };
-  } catch (error) {
-    console.error('Failed to get access token:', error);
-    throw new Error('Failed to get authentication token');
-  }
 }
 
 // Generic API request function
@@ -57,34 +58,24 @@ async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-  
-  const authHeaders = await getAuthHeaders();
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-    ...authHeaders,
-  };
-
-  const config: RequestInit = {
-    ...options,
-    headers: {
-      ...defaultHeaders,
-      ...options.headers,
-    },
-  };
-
   try {
-    const response = await fetch(url, config);
-    const result: ApiResponse<T> = await response.json();
+    const result = await sharedApiClient.request<ApiResponse<T>>(endpoint, {
+      method: options.method ?? 'GET',
+      headers: options.headers,
+      body: options.body,
+    });
 
     if (!result.success) {
-      throw new ApiError(response.status, result.message);
+      throw new ApiError(500, result.message);
     }
 
-    return result.data;
+    return result.data as T;
   } catch (error) {
     if (error instanceof ApiError) {
       throw error;
+    }
+    if (error instanceof SharedApiError) {
+      throw new ApiError(error.status, error.message);
     }
     throw new ApiError(0, error instanceof Error ? error.message : 'Network error');
   }
@@ -455,8 +446,6 @@ export const mapApi = {
 
   // Create map in campaign with image upload
   async create(campaignId: string, mapData: { name: string; description?: string; imageFile: File }): Promise<unknown> {
-    const authHeaders = await getAuthHeaders();
-    
     const formData = new FormData();
     formData.append('name', mapData.name);
     if (mapData.description) {
@@ -464,19 +453,13 @@ export const mapApi = {
     }
     formData.append('image', mapData.imageFile);
 
-    const response = await fetch(`${API_BASE_URL}/campaigns/${campaignId}/maps`, {
+    const result = await sharedApiClient.request<ApiResponse<unknown>>(`/campaigns/${campaignId}/maps`, {
       method: 'POST',
-      credentials: 'include',
-      headers: {
-        ...authHeaders,
-      },
       body: formData,
     });
 
-    const result: ApiResponse<unknown> = await response.json();
-
     if (!result.success) {
-      throw new ApiError(response.status, result.message);
+      throw new ApiError(500, result.message);
     }
 
     return result.data;
@@ -649,18 +632,10 @@ export const sharedResourceApi = {
 
   // Download resource
   async download(id: string): Promise<Blob> {
-    const authHeaders = await getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/resources/${id}/download`, {
-      headers: {
-        ...authHeaders,
-      },
+    return sharedApiClient.request<Blob>(`/resources/${id}/download`, {
+      method: 'GET',
+      responseType: 'blob',
     });
-
-    if (!response.ok) {
-      throw new ApiError(response.status, `Download failed: ${await response.text()}`);
-    }
-
-    return response.blob();
   },
 
   // Get resource info (types, categories, etc.)

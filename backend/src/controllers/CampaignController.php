@@ -126,7 +126,7 @@ class CampaignController extends BaseController
     public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['id']);
+            $campaign = $this->ownedCampaign($request, $args['id']);
             
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
@@ -151,7 +151,7 @@ class CampaignController extends BaseController
     public function delete(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['id']);
+            $campaign = $this->ownedCampaign($request, $args['id']);
             
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
@@ -171,7 +171,7 @@ class CampaignController extends BaseController
     public function export(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['id']);
+            $campaign = $this->ownedCampaign($request, $args['id']);
             
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
@@ -183,7 +183,7 @@ class CampaignController extends BaseController
                 'include_stats' => isset($queryParams['include_stats']),
             ];
             
-            $exportData = ExportService::exportCampaign($campaign->id, $options);
+            $exportData = ExportService::exportCampaign($campaign->id, $options, (string) $this->getUserId($request));
             
             return $this->success($response, $exportData, 'Campaign exported successfully');
         } catch (\Exception $e) {
@@ -197,7 +197,7 @@ class CampaignController extends BaseController
     public function analytics(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['id']);
+            $campaign = $this->ownedCampaign($request, $args['id']);
             
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
@@ -223,7 +223,7 @@ class CampaignController extends BaseController
     public function search(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['id']);
+            $campaign = $this->ownedCampaign($request, $args['id']);
             
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
@@ -274,6 +274,7 @@ class CampaignController extends BaseController
             $campaignData['name'] = ($campaignData['name'] ?? 'Imported Campaign') . ' (Imported)';
             
             $campaign = Campaign::create([
+                'user_id' => $this->getUserId($request),
                 'name' => $campaignData['name'],
                 'description' => $campaignData['description'] ?? null,
             ]);

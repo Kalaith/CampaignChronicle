@@ -45,20 +45,6 @@ return function (App $app) {
             $auth->post('/link-guest', [AuthController::class, 'linkGuestAccount'])->add(new \App\Middleware\JwtAuthMiddleware());
             $auth->post('/link-guest/preview', [AuthController::class, 'previewGuestLink'])->add(new \App\Middleware\JwtAuthMiddleware());
             
-            // Debug endpoint
-            $auth->get('/debug', function (Request $request, Response $response) {
-                $user = $request->getAttribute('user');
-                $claims = $request->getAttribute('jwt_claims');
-                
-                $debug = [
-                    'user' => $user,
-                    'jwt_claims' => $claims,
-                    'has_user' => $user !== null
-                ];
-                
-                $response->getBody()->write(json_encode($debug, JSON_PRETTY_PRINT));
-                return $response->withHeader('Content-Type', 'application/json');
-            })->add(new \App\Middleware\JwtAuthMiddleware());
         });
         
         // Protected routes (require authentication)
@@ -78,12 +64,17 @@ return function (App $app) {
             // CSV Export endpoints
             $campaigns->get('/{id}/export/csv/{entity_type}', function ($request, $response, $args) {
                 try {
-                    $csv = \App\Services\ExportService::exportToCSV($args['id'], $args['entity_type']);
+                    $csv = \App\Services\ExportService::exportToCSV(
+                        $args['id'],
+                        $args['entity_type'],
+                        (string) $request->getAttribute('user_id')
+                    );
                     $response->getBody()->write($csv);
                     return $response->withHeader('Content-Type', 'text/csv')
                                   ->withHeader('Content-Disposition', 'attachment; filename="' . $args['entity_type'] . '.csv"');
                 } catch (\Exception $e) {
-                    $error = json_encode(['success' => false, 'message' => $e->getMessage()]);
+                    error_log('Campaign CSV export failed: ' . $e->getMessage());
+                    $error = json_encode(['success' => false, 'message' => 'An unexpected server error occurred.']);
                     $response->getBody()->write($error);
                     return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
                 }
@@ -102,7 +93,8 @@ return function (App $app) {
                     $suggestions = \App\Services\SearchService::getSearchSuggestions($args['id'], $partial);
                     return (new \App\Controllers\BaseController())->success($response, $suggestions);
                 } catch (\Exception $e) {
-                    return (new \App\Controllers\BaseController())->error($response, $e->getMessage(), 500);
+                    error_log('Campaign search suggestions failed: ' . $e->getMessage());
+                    return (new \App\Controllers\BaseController())->error($response, 'An unexpected server error occurred.', 500);
                 }
             });
             

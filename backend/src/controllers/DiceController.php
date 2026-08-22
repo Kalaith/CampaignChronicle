@@ -2,9 +2,9 @@
 
 namespace App\Controllers;
 
+use App\Models\Campaign;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 // Dice Roll Model
 class DiceRoll extends Model
@@ -39,31 +39,9 @@ class DiceRoll extends Model
 
     public $timestamps = false;
 
-    public static function createTable()
+    public function campaign(): BelongsTo
     {
-        if (!Schema::hasTable('dice_rolls')) {
-            Schema::create('dice_rolls', function (Blueprint $table) {
-                $table->id();
-                $table->string('campaign_id');
-                $table->string('player_id')->nullable();
-                $table->string('player_name')->nullable();
-                $table->string('expression');
-                $table->integer('result');
-                $table->json('individual_rolls');
-                $table->integer('modifier')->default(0);
-                $table->string('context')->nullable();
-                $table->boolean('advantage')->default(false);
-                $table->boolean('disadvantage')->default(false);
-                $table->boolean('critical')->default(false);
-                $table->json('tags')->nullable();
-                $table->boolean('is_private')->default(false);
-                $table->timestamp('created_at')->useCurrent();
-                
-                $table->index('campaign_id');
-                $table->index('player_id');
-                $table->index(['campaign_id', 'created_at']);
-            });
-        }
+        return $this->belongsTo(Campaign::class);
     }
 }
 
@@ -88,23 +66,9 @@ class DiceTemplate extends Model
 
     public $timestamps = false;
 
-    public static function createTable()
+    public function campaign(): BelongsTo
     {
-        if (!Schema::hasTable('dice_templates')) {
-            Schema::create('dice_templates', function (Blueprint $table) {
-                $table->id();
-                $table->string('campaign_id');
-                $table->string('name');
-                $table->string('expression');
-                $table->text('description')->nullable();
-                $table->enum('category', ['attack', 'damage', 'save', 'skill', 'custom']);
-                $table->json('tags')->nullable();
-                $table->timestamp('created_at')->useCurrent();
-                
-                $table->index('campaign_id');
-                $table->index(['campaign_id', 'category']);
-            });
-        }
+        return $this->belongsTo(Campaign::class);
     }
 }
 
@@ -113,20 +77,36 @@ class DiceController extends BaseController
     public function __construct()
     {
         parent::__construct();
-        DiceRoll::createTable();
-        DiceTemplate::createTable();
+    }
+
+    private function campaignId(array $args): ?string
+    {
+        return isset($args['campaign_id']) && trim((string) $args['campaign_id']) !== ''
+            ? trim((string) $args['campaign_id'])
+            : (isset($args['campaignId']) && trim((string) $args['campaignId']) !== ''
+                ? trim((string) $args['campaignId'])
+                : null);
+    }
+
+    private function campaignRequired($request, $response, array $args): ?string
+    {
+        $campaignId = $this->campaignId($args);
+        if ($campaignId === null || $this->ownedCampaign($request, $campaignId) === null) {
+            $this->notFound($response, 'Campaign not found');
+            return null;
+        }
+
+        return $campaignId;
     }
 
     // Roll History Management
     public function getRolls($request, $response, $args)
     {
-        $campaignId = $args['campaignId'] ?? null;
+        $campaignId = $this->campaignRequired($request, $response, $args);
         $limit = $request->getQueryParams()['limit'] ?? 50;
         $includePrivate = $request->getQueryParams()['includePrivate'] ?? false;
 
-        if (!$campaignId) {
-            return $this->jsonResponse($response, ['error' => 'Campaign ID required'], 400);
-        }
+        if ($campaignId === null) return $this->notFound($response, 'Campaign not found');
 
         try {
             $query = DiceRoll::where('campaign_id', $campaignId)
@@ -148,11 +128,9 @@ class DiceController extends BaseController
 
     public function createRoll($request, $response, $args)
     {
-        $campaignId = $args['campaignId'] ?? null;
+        $campaignId = $this->campaignRequired($request, $response, $args);
         
-        if (!$campaignId) {
-            return $this->jsonResponse($response, ['error' => 'Campaign ID required'], 400);
-        }
+        if ($campaignId === null) return $this->notFound($response, 'Campaign not found');
 
         $data = $request->getParsedBody();
         
@@ -196,7 +174,9 @@ class DiceController extends BaseController
         }
 
         try {
-            $roll = DiceRoll::find($rollId);
+            $campaignId = $this->campaignRequired($request, $response, $args);
+            if ($campaignId === null) return $this->notFound($response, 'Campaign not found');
+            $roll = $this->ownedEntityInCampaign($request, DiceRoll::class, $rollId, $campaignId);
             
             if (!$roll) {
                 return $this->jsonResponse($response, ['error' => 'Roll not found'], 404);
@@ -211,11 +191,9 @@ class DiceController extends BaseController
 
     public function clearRollHistory($request, $response, $args)
     {
-        $campaignId = $args['campaignId'] ?? null;
+        $campaignId = $this->campaignRequired($request, $response, $args);
         
-        if (!$campaignId) {
-            return $this->jsonResponse($response, ['error' => 'Campaign ID required'], 400);
-        }
+        if ($campaignId === null) return $this->notFound($response, 'Campaign not found');
 
         try {
             $data = $request->getParsedBody();
@@ -242,11 +220,9 @@ class DiceController extends BaseController
     // Template Management
     public function getTemplates($request, $response, $args)
     {
-        $campaignId = $args['campaignId'] ?? null;
+        $campaignId = $this->campaignRequired($request, $response, $args);
         
-        if (!$campaignId) {
-            return $this->jsonResponse($response, ['error' => 'Campaign ID required'], 400);
-        }
+        if ($campaignId === null) return $this->notFound($response, 'Campaign not found');
 
         try {
             $templates = DiceTemplate::where('campaign_id', $campaignId)
@@ -262,11 +238,9 @@ class DiceController extends BaseController
 
     public function createTemplate($request, $response, $args)
     {
-        $campaignId = $args['campaignId'] ?? null;
+        $campaignId = $this->campaignRequired($request, $response, $args);
         
-        if (!$campaignId) {
-            return $this->jsonResponse($response, ['error' => 'Campaign ID required'], 400);
-        }
+        if ($campaignId === null) return $this->notFound($response, 'Campaign not found');
 
         $data = $request->getParsedBody();
         
@@ -303,7 +277,9 @@ class DiceController extends BaseController
         }
 
         try {
-            $template = DiceTemplate::find($templateId);
+            $campaignId = $this->campaignRequired($request, $response, $args);
+            if ($campaignId === null) return $this->notFound($response, 'Campaign not found');
+            $template = $this->ownedEntityInCampaign($request, DiceTemplate::class, $templateId, $campaignId);
             
             if (!$template) {
                 return $this->jsonResponse($response, ['error' => 'Template not found'], 404);
@@ -327,7 +303,9 @@ class DiceController extends BaseController
         }
 
         try {
-            $template = DiceTemplate::find($templateId);
+            $campaignId = $this->campaignRequired($request, $response, $args);
+            if ($campaignId === null) return $this->notFound($response, 'Campaign not found');
+            $template = $this->ownedEntityInCampaign($request, DiceTemplate::class, $templateId, $campaignId);
             
             if (!$template) {
                 return $this->jsonResponse($response, ['error' => 'Template not found'], 404);
@@ -343,11 +321,9 @@ class DiceController extends BaseController
     // Statistics and Analytics
     public function getRollStatistics($request, $response, $args)
     {
-        $campaignId = $args['campaignId'] ?? null;
+        $campaignId = $this->campaignRequired($request, $response, $args);
         
-        if (!$campaignId) {
-            return $this->jsonResponse($response, ['error' => 'Campaign ID required'], 400);
-        }
+        if ($campaignId === null) return $this->notFound($response, 'Campaign not found');
 
         $params = $request->getQueryParams();
         $playerId = $params['player_id'] ?? null;
@@ -393,11 +369,9 @@ class DiceController extends BaseController
     // Real-time sharing
     public function getRecentRolls($request, $response, $args)
     {
-        $campaignId = $args['campaignId'] ?? null;
+        $campaignId = $this->campaignRequired($request, $response, $args);
         
-        if (!$campaignId) {
-            return $this->jsonResponse($response, ['error' => 'Campaign ID required'], 400);
-        }
+        if ($campaignId === null) return $this->notFound($response, 'Campaign not found');
 
         $params = $request->getQueryParams();
         $since = $params['since'] ?? null;

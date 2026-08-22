@@ -12,7 +12,7 @@ class ItemController extends BaseController
     public function index(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -35,7 +35,7 @@ class ItemController extends BaseController
     public function show(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $item = Item::with(['ownerCharacter', 'locationEntity'])->find($args['id']);
+            $item = $this->ownedEntity($request, Item::class, $args['id']);
             
             if (!$item) {
                 return $this->notFound($response, 'Item not found');
@@ -50,7 +50,7 @@ class ItemController extends BaseController
     public function create(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $campaign = Campaign::find($args['campaign_id']);
+            $campaign = $this->ownedCampaign($request, $args['campaign_id']);
             if (!$campaign) {
                 return $this->notFound($response, 'Campaign not found');
             }
@@ -74,7 +74,7 @@ class ItemController extends BaseController
     public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $item = Item::find($args['id']);
+            $item = $this->ownedEntity($request, Item::class, $args['id']);
             if (!$item) {
                 return $this->notFound($response, 'Item not found');
             }
@@ -91,7 +91,7 @@ class ItemController extends BaseController
     public function delete(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $item = Item::find($args['id']);
+            $item = $this->ownedEntity($request, Item::class, $args['id']);
             if (!$item) {
                 return $this->notFound($response, 'Item not found');
             }
@@ -106,7 +106,7 @@ class ItemController extends BaseController
     public function transfer(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $item = Item::find($args['id']);
+            $item = $this->ownedEntity($request, Item::class, $args['id']);
             if (!$item) {
                 return $this->notFound($response, 'Item not found');
             }
@@ -132,7 +132,7 @@ class ItemController extends BaseController
     public function history(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $item = Item::find($args['id']);
+            $item = $this->ownedEntity($request, Item::class, $args['id']);
             if (!$item) {
                 return $this->notFound($response, 'Item not found');
             }
