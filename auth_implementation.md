@@ -1,150 +1,59 @@
-# Campaign Chronicle Authentication Integration Plan
+# Campaign Chronicle Authentication
 
-## Overview
-Campaign Chronicle currently operates without authentication. This plan outlines how to implement user accounts through the frontpage site to provide secure, multi-user access to campaign management features.
+Campaign Chronicle uses the shared Web Hatchery identity portal. It does not
+own a login or registration flow.
 
-## Current State
-- Campaign Chronicle: No authentication, open access to all features
-- Frontpage: Separate site that will handle user authentication and session management
+## User flow
 
-## Proposed Architecture
+1. A signed-in Web Hatchery user enters Campaign Chronicle and is passed
+   through with the root bearer token.
+2. A visitor without a full account is sent to the Web Hatchery login page with
+   a same-origin return URL. After login or registration, the portal returns
+   the visitor to Campaign Chronicle.
+3. A visitor may choose **Continue as guest**. Campaign Chronicle creates a
+   short-lived, app-scoped guest session and stores guest-owned campaign data
+   under that guest identity.
+4. While using a guest session, the visitor may sign in or register at the
+   root portal. If both the full account and guest session contain data, the
+   app presents the available choices: keep the full account, keep the guest
+   data, or merge the two datasets. The guest token must be supplied to the
+   link endpoint and is verified server-side.
 
-### Authentication Flow
-1. **User Registration/Login**: Handled entirely by frontpage site
-2. **Session Management**: Frontpage maintains user sessions and tokens
-3. **Campaign Access**: Campaign Chronicle validates users through frontpage API
-4. **Data Isolation**: Each user's campaigns and data are isolated by user ID
+## API surface
 
-### Technical Implementation
+The app exposes only the shared-auth bridge and application APIs:
 
-#### Phase 1: Frontpage Authentication System
-- **User Registration**: Email/password registration with validation
-- **Login System**: Secure authentication with session management
-- **User Profiles**: Basic profile management (username, email, preferences)
-- **Session Tokens**: JWT or session-based authentication tokens
-- **API Endpoints**: RESTful API for user validation and data access
+- `GET /api/auth/current-user` validates the shared bearer token.
+- `POST /api/auth/guest-session` creates an app guest session.
+- `POST /api/auth/link-guest` links guest data after a full account login.
+- `POST /api/auth/link-guest/preview` returns the data summary used by the
+  merge confirmation UI.
 
-#### Phase 2: Campaign Chronicle Integration
-- **Authentication Middleware**: Validate user sessions from frontpage
-- **User Context**: Pass user ID to all Campaign Chronicle operations
-- **Database Schema Updates**: Add user_id foreign keys to all campaign tables
-- **Data Migration**: Associate existing campaigns with a default admin user
-- **Access Control**: Ensure users can only access their own campaigns
+There are no Campaign Chronicle `/auth/login` or `/auth/register` endpoints.
+Unauthenticated protected requests return HTTP 401 with a `login_url` value;
+the API does not redirect or silently log users out.
 
-#### Phase 3: Enhanced Features
-- **Campaign Sharing**: Allow users to share campaigns with other users
-- **Team Management**: Multi-user campaigns with role-based permissions
-- **Import/Export**: User-specific data backup and restore
-- **Activity Logs**: Track user actions for security and audit
+## Configuration
 
-### Database Changes
+The Campaign Chronicle backend and the Web Hatchery frontpage must use the
+same production `JWT_SECRET`. The backend also requires:
 
-#### Frontpage Database (New Tables)
-```sql
--- Users table
-users (id, email, username, password_hash, created_at, updated_at, email_verified)
-
--- User sessions
-user_sessions (id, user_id, token, expires_at, created_at)
-
--- User preferences  
-user_preferences (id, user_id, preferences_json, updated_at)
+```dotenv
+JWT_SECRET=<shared-production-webhatchery-secret>
+WEBHATCHERY_LOGIN_URL=https://webhatchery.au/login
 ```
 
-#### Campaign Chronicle Database (Schema Updates)
-```sql
--- Add user_id to existing tables
-ALTER TABLE campaigns ADD COLUMN user_id INT REFERENCES users(id);
-ALTER TABLE characters ADD COLUMN user_id INT REFERENCES users(id);  
-ALTER TABLE locations ADD COLUMN user_id INT REFERENCES users(id);
-ALTER TABLE items ADD COLUMN user_id INT REFERENCES users(id);
-ALTER TABLE notes ADD COLUMN user_id INT REFERENCES users(id);
-ALTER TABLE relationships ADD COLUMN user_id INT REFERENCES users(id);
+The frontend requires `VITE_WEBHATCHERY_LOGIN_URL` and
+`VITE_WEBHATCHERY_SIGNUP_URL`, both pointing to the root portal.
 
--- Campaign sharing (future enhancement)
-campaign_shares (id, campaign_id, owner_user_id, shared_user_id, permissions, created_at)
-```
+## Data migration
 
-### API Design
+Existing Campaign Chronicle records remain in the Campaign Chronicle
+database. Run the app's ordered schema migration and then
+`backend/migrate_auth.php` on deployments that predate the shared-auth
+columns or optional feature tables. Back up the database first and verify the
+migration output before opening the app to users. No new central auth tables
+are required in the Web Hatchery database.
 
-#### Frontpage Authentication API
-```
-POST /api/auth/register - User registration
-POST /api/auth/login - User login  
-POST /api/auth/logout - User logout
-GET /api/auth/validate - Validate session token
-GET /api/auth/user - Get current user info
-PUT /api/auth/user - Update user profile
-```
-
-#### Campaign Chronicle User API
-```
-GET /api/user/campaigns - Get user's campaigns
-POST /api/user/campaigns - Create new campaign for user
-GET /api/user/validate - Validate user session (internal)
-```
-
-### Security Considerations
-
-#### Authentication Security
-- **Password Hashing**: Use bcrypt or Argon2 for password storage
-- **CSRF Protection**: Implement CSRF tokens for all forms
-- **Rate Limiting**: Prevent brute force attacks on login
-- **Session Security**: Secure session cookies with httpOnly and secure flags
-- **Token Expiration**: Implement reasonable token expiration times
-
-#### Data Security  
-- **SQL Injection**: Use prepared statements for all database queries
-- **XSS Prevention**: Sanitize all user inputs and outputs
-- **Access Control**: Strict user ID validation on all operations
-- **Data Encryption**: Consider encrypting sensitive campaign data at rest
-
-### Implementation Timeline
-
-#### Week 1-2: Frontpage Authentication
-- Set up user registration and login system
-- Implement session management
-- Create user profile management
-- Build authentication API endpoints
-
-#### Week 3-4: Campaign Chronicle Integration  
-- Add authentication middleware to Campaign Chronicle
-- Update database schema with user_id fields
-- Migrate existing data to default admin user
-- Implement user context throughout application
-
-#### Week 5-6: Testing and Security
-- Comprehensive security testing
-- User acceptance testing
-- Performance optimization
-- Documentation and deployment
-
-### Migration Strategy
-
-#### Data Migration
-1. **Create Default Admin User**: Migrate all existing campaigns to admin account
-2. **User ID Population**: Update all tables with default admin user_id
-3. **Validation**: Ensure all records have valid user associations
-4. **Backup**: Full database backup before migration
-
-#### Rollback Plan
-- **Database Backup**: Complete backup before any schema changes
-- **Feature Flags**: Implement authentication as optional feature initially  
-- **Graceful Degradation**: Maintain ability to run without authentication during transition
-
-### Post-Implementation Enhancements
-
-#### User Experience
-- **Dashboard**: Personalized dashboard showing user's campaigns
-- **Recent Activity**: Show recent changes and activity
-- **Search**: User-specific search across campaigns
-- **Favorites**: Allow users to favorite important campaigns/characters
-
-#### Advanced Features
-- **Team Collaboration**: Multi-user campaign management
-- **Campaign Templates**: Shareable campaign templates
-- **Data Analytics**: User engagement and usage analytics
-- **Mobile App**: Extend authentication to mobile applications
-
-## Conclusion
-This phased approach ensures secure implementation of user authentication while maintaining Campaign Chronicle's current functionality. The separation of concerns between frontpage authentication and Campaign Chronicle features provides flexibility and security while enabling future enhancements for multi-user collaboration.
+See `D:\WebHatchery\apps\AUTHENTICATION_ROLLOUT.md` for the cross-app rollout,
+production checklist, and rollback guidance.

@@ -26,12 +26,23 @@ function buildLocalAppClassMap(string $srcPath): array
     return $classMap;
 }
 
-$globalAutoload = __DIR__ . '/../../../../vendor/autoload.php';
+$globalAutoload = null;
+$searchDir = __DIR__;
+for ($i = 0; $i < 8; $i++) {
+    $candidate = $searchDir . '/vendor/autoload.php';
+    if (file_exists($candidate)) {
+        $globalAutoload = $candidate;
+        break;
+    }
+
+    $parent = dirname($searchDir);
+    if ($parent === $searchDir) {
+        break;
+    }
+    $searchDir = $parent;
+}
 $localAutoload = __DIR__ . '/../vendor/autoload.php';
-$autoloadCandidates = [
-    $globalAutoload,
-    $localAutoload,
-];
+$autoloadCandidates = array_values(array_filter([$globalAutoload, $localAutoload]));
 $autoloader = null;
 foreach ($autoloadCandidates as $candidate) {
     if (file_exists($candidate)) {

@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\User;
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -16,94 +17,12 @@ class AuthController extends BaseController
     public function __construct()
     {
         $this->jwtSecret = trim($_ENV['JWT_SECRET'] ?? '');
-        $this->jwtExpiration = (int) ($_ENV['JWT_EXPIRATION'] ?? 86400);
+        $this->jwtExpiration = $this->requiredIntEnv('JWT_EXPIRATION');
 
         if ($this->jwtSecret === '') {
             throw new \RuntimeException('JWT_SECRET must be set in environment variables');
         }
 
-        if ($this->jwtExpiration <= 0) {
-            $this->jwtExpiration = 86400;
-        }
-    }
-
-    public function login(Request $request, Response $response): Response
-    {
-        $data = $this->getRequestData($request);
-
-        $identifier = trim((string) ($data['identifier'] ?? $data['email'] ?? $data['username'] ?? ''));
-        $password = (string) ($data['password'] ?? '');
-
-        if ($identifier === '' || $password === '') {
-            return $this->error($response, 'Identifier and password are required', 422);
-        }
-
-        $user = filter_var($identifier, FILTER_VALIDATE_EMAIL)
-            ? User::where('email', $identifier)->first()
-            : User::where('username', $identifier)->first();
-
-        if (!$user || !$user->password_hash || !password_verify($password, $user->password_hash)) {
-            return $this->error($response, 'Invalid credentials', 401);
-        }
-
-        $token = $this->createToken($user);
-
-        return $this->success($response, [
-            'token' => $token,
-            'user' => $this->serializeUser($user),
-            'expires_in' => $this->jwtExpiration,
-            'token_type' => 'Bearer',
-        ], 'Login successful');
-    }
-
-    public function register(Request $request, Response $response): Response
-    {
-        $data = $this->getRequestData($request);
-
-        $requiredErrors = $this->validateRequired($data, ['email', 'username', 'password']);
-        if (!empty($requiredErrors)) {
-            return $this->validationError($response, $requiredErrors);
-        }
-
-        $email = trim((string) $data['email']);
-        $username = trim((string) $data['username']);
-        $password = (string) $data['password'];
-        $displayName = trim((string) ($data['display_name'] ?? $username));
-
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return $this->error($response, 'Invalid email address', 422);
-        }
-        if (strlen($password) < 8) {
-            return $this->error($response, 'Password must be at least 8 characters', 422);
-        }
-
-        if (User::where('email', $email)->exists()) {
-            return $this->error($response, 'Email is already registered', 409);
-        }
-        if (User::where('username', $username)->exists()) {
-            return $this->error($response, 'Username is already taken', 409);
-        }
-
-        $user = User::create([
-            'webhatch_id' => 'local:' . bin2hex(random_bytes(12)),
-            'email' => $email,
-            'display_name' => $displayName,
-            'username' => $username,
-            'role' => 'user',
-            'is_verified' => true,
-            'password_hash' => password_hash($password, PASSWORD_DEFAULT),
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s'),
-        ]);
-
-        $token = $this->createToken($user);
-
-        return $this->success($response, [
-            'token' => $token,
-            'user' => $this->serializeUser($user),
-            'expires_in' => $this->jwtExpiration,
-            'token_type' => 'Bearer',
-        ], 'Registration successful', 201);
     }
 
     public function currentUser(Request $request, Response $response): Response
@@ -119,8 +38,11 @@ class AuthController extends BaseController
     public function createGuestSession(Request $request, Response $response): Response
     {
         $now = time();
-        $guestId = 'guest_' . bin2hex(random_bytes(16));
-        $guestTag = substr(str_replace('-', '', $guestId), 0, 8);
+        // Campaign Chronicle has legacy unsigned-integer ownership columns in
+        // some deployed databases. Keep the guest identity numeric so it can
+        // be stored safely in both those columns and the newer VARCHAR ones.
+        $guestId = (string) random_int(1000000000, 2147483647);
+        $guestTag = substr($guestId, -8);
         $username = 'guest_' . $guestTag;
 
         $payload = [
@@ -178,7 +100,7 @@ class AuthController extends BaseController
 
         $payload = $this->getRequestData($request);
         $guestUserId = trim((string) ($payload['guest_user_id'] ?? ''));
-        if ($guestUserId === '' || !str_starts_with($guestUserId, 'guest_')) {
+        if ($guestUserId === '' || !ctype_digit($guestUserId)) {
             return $this->error($response, 'Invalid guest_user_id', 400);
         }
 
@@ -186,45 +108,116 @@ class AuthController extends BaseController
             return $this->error($response, 'Invalid transfer request', 400);
         }
 
-        $tables = [
-            'campaigns',
-            'characters',
-            'locations',
-            'items',
-            'notes',
-            'relationships',
-            'timeline_events',
-            'campaign_weather',
-            'campaign_maps',
-            'quests',
-            'combat_encounters',
-            'player_access',
-            'shared_resources',
-        ];
+        $guestToken = trim((string) ($payload['guest_token'] ?? ''));
+        if (!$this->guestTokenMatches($guestToken, $guestUserId)) {
+            return $this->error($response, 'Guest token proof is invalid', 400);
+        }
+
+        $strategy = (string) ($payload['merge_strategy'] ?? $payload['strategy'] ?? 'merge');
+        if (!in_array($strategy, ['keep_account', 'guest_wins', 'merge'], true)) {
+            return $this->error($response, 'Invalid guest merge strategy', 400);
+        }
 
         $movedByTable = [];
         $totalMoved = 0;
 
-        foreach ($tables as $table) {
-            $moved = Capsule::table($table)
-                ->where('user_id', $guestUserId)
-                ->update(['user_id' => $currentUserId]);
+        foreach ($this->ownedTableDefinitions() as $table => $definition) {
+            $query = Capsule::table($table)->where($definition['column'], $guestUserId);
+            $moved = $strategy === 'keep_account'
+                ? $query->delete()
+                : $query->update([$definition['column'] => $currentUserId]);
             $movedByTable[$table] = $moved;
             $totalMoved += $moved;
         }
 
-        $diceRollsMoved = Capsule::table('dice_rolls')
-            ->where('player_id', $guestUserId)
-            ->update(['player_id' => $currentUserId]);
-        $movedByTable['dice_rolls'] = $diceRollsMoved;
-        $totalMoved += $diceRollsMoved;
-
         return $this->success($response, [
             'guest_user_id' => $guestUserId,
             'linked_to_user_id' => $currentUserId,
+            'strategy' => $strategy,
             'moved_rows_by_table' => $movedByTable,
             'total_moved_rows' => $totalMoved,
         ], 'Guest account data linked successfully');
+    }
+
+    public function previewGuestLink(Request $request, Response $response): Response
+    {
+        $user = $request->getAttribute('user');
+        $payload = $this->getRequestData($request);
+        $currentUserId = trim((string) ($user['id'] ?? ''));
+        $guestUserId = trim((string) ($payload['guest_user_id'] ?? ''));
+        $guestToken = trim((string) ($payload['guest_token'] ?? ''));
+
+        if ($currentUserId === '' || $guestUserId === '' || !$this->guestTokenMatches($guestToken, $guestUserId)) {
+            return $this->error($response, 'Guest token and user identifiers are required', 400);
+        }
+
+        $guestSummary = [];
+        $accountSummary = [];
+        foreach ($this->ownedTableDefinitions() as $table => $definition) {
+            $column = $definition['column'];
+            $guestSummary[$table] = Capsule::table($table)->where($column, $guestUserId)->count();
+            $accountSummary[$table] = Capsule::table($table)->where($column, $currentUserId)->count();
+        }
+
+        return $this->success($response, [
+            'has_guest_data' => array_sum($guestSummary) > 0,
+            'has_account_data' => array_sum($accountSummary) > 0,
+            'guest_summary' => $guestSummary,
+            'account_summary' => $accountSummary,
+            'allowed_strategies' => ['keep_account', 'guest_wins', 'merge'],
+        ]);
+    }
+
+    /**
+     * Return only ownership tables that exist in the deployed database.
+     * Older Campaign Chronicle databases do not contain every optional feature
+     * table yet, so guest linking must remain safe and repeatable during rollout.
+     *
+     * @return array<string, array{column: string}>
+     */
+    private function ownedTableDefinitions(): array
+    {
+        $candidates = [
+            'campaigns' => 'user_id',
+            'characters' => 'user_id',
+            'locations' => 'user_id',
+            'items' => 'user_id',
+            'notes' => 'user_id',
+            'relationships' => 'user_id',
+            'timeline_events' => 'user_id',
+            'campaign_weather' => 'user_id',
+            'campaign_maps' => 'user_id',
+            'quests' => 'user_id',
+            'combat_encounters' => 'user_id',
+            'player_access' => 'user_id',
+            'shared_resources' => 'user_id',
+            'dice_rolls' => 'player_id',
+        ];
+
+        $available = [];
+        foreach ($candidates as $table => $column) {
+            if (Capsule::schema()->hasTable($table) && Capsule::schema()->hasColumn($table, $column)) {
+                $available[$table] = ['column' => $column];
+            }
+        }
+
+        return $available;
+    }
+
+    private function guestTokenMatches(string $token, string $guestUserId): bool
+    {
+        if ($token === '') {
+            return false;
+        }
+
+        try {
+            $claims = (array) JWT::decode($token, new Key($this->jwtSecret, 'HS256'));
+            $claimId = (string) ($claims['user_id'] ?? $claims['sub'] ?? '');
+            $isGuest = (bool) ($claims['is_guest'] ?? false) || (($claims['auth_type'] ?? null) === 'guest');
+            return $isGuest && hash_equals($guestUserId, $claimId);
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     private function createToken(User $user): string
@@ -260,5 +253,15 @@ class AuthController extends BaseController
             'created_at' => (string) $user->created_at,
             'updated_at' => (string) $user->updated_at,
         ];
+    }
+
+    private function requiredIntEnv(string $name): int
+    {
+        $value = trim((string) ($_ENV[$name] ?? ''));
+        if ($value === '' || !ctype_digit($value) || (int) $value <= 0) {
+            throw new \RuntimeException($name . ' environment variable must be a positive integer');
+        }
+
+        return (int) $value;
     }
 }
