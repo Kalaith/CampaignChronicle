@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\External;
 
 use Illuminate\Database\Capsule\Manager as Capsule;
@@ -17,13 +19,27 @@ class DatabaseService
             $config = require $configPath;
             $db = $config['database'];
         } else {
+            $requiredEnv = static function (string $name): string {
+                if (!array_key_exists($name, $_ENV) || !is_string($_ENV[$name]) || trim($_ENV[$name]) === '') {
+                    throw new \RuntimeException("Missing required environment variable: {$name}");
+                }
+
+                return trim($_ENV[$name]);
+            };
+            $database = array_key_exists('DB_NAME', $_ENV)
+                ? $requiredEnv('DB_NAME')
+                : $requiredEnv('DB_DATABASE');
+            $username = array_key_exists('DB_USER', $_ENV)
+                ? $requiredEnv('DB_USER')
+                : $requiredEnv('DB_USERNAME');
+
             $db = [
                 'driver' => 'mysql',
-                'host' => $_ENV['DB_HOST'] ?? 'localhost',
-                'port' => $_ENV['DB_PORT'] ?? 3306,
-                'database' => $_ENV['DB_NAME'] ?? $_ENV['DB_DATABASE'] ?? 'blacksmith_forge',
-                'username' => $_ENV['DB_USER'] ?? $_ENV['DB_USERNAME'] ?? 'root',
-                'password' => $_ENV['DB_PASSWORD'] ?? '',
+                'host' => $requiredEnv('DB_HOST'),
+                'port' => $requiredEnv('DB_PORT'),
+                'database' => $database,
+                'username' => $username,
+                'password' => $requiredEnv('DB_PASSWORD'),
                 'charset' => 'utf8mb4',
             ];
         }

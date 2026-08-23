@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $autoloadCandidates = [
     __DIR__ . '/../../../vendor/autoload.php',
     __DIR__ . '/vendor/autoload.php',
@@ -27,15 +29,23 @@ use Dotenv\Dotenv;
 $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->safeLoad();
 
+$requiredEnv = static function (string $name): string {
+    if (!array_key_exists($name, $_ENV) || !is_string($_ENV[$name]) || trim($_ENV[$name]) === '') {
+        throw new RuntimeException("Missing required environment variable: {$name}");
+    }
+
+    return trim($_ENV[$name]);
+};
+
 // Initialize database connection
 $capsule = new Capsule;
 $capsule->addConnection([
     'driver' => 'mysql',
-    'host' => $_ENV['DB_HOST'] ?? 'localhost',
-    'port' => $_ENV['DB_PORT'] ?? '3306',
-    'database' => $_ENV['DB_NAME'] ?? 'campaign_chronicle',
-    'username' => $_ENV['DB_USER'] ?? 'root',
-    'password' => $_ENV['DB_PASSWORD'] ?? '',
+    'host' => $requiredEnv('DB_HOST'),
+    'port' => $requiredEnv('DB_PORT'),
+    'database' => $requiredEnv('DB_NAME'),
+    'username' => $requiredEnv('DB_USER'),
+    'password' => $requiredEnv('DB_PASSWORD'),
     'charset' => 'utf8mb4',
     'collation' => 'utf8mb4_unicode_ci',
     'prefix' => '',
